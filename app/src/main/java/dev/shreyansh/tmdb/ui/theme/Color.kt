@@ -1,4 +1,4 @@
-package dev.shreyansh.tmdb.ui
+package dev.shreyansh.tmdb.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
