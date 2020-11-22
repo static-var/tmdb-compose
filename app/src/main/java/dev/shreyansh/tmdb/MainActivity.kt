@@ -1,38 +1,24 @@
 package dev.shreyansh.tmdb
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.Text
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.runtime.Composable
+import androidx.activity.ComponentActivity
+import androidx.activity.viewModels
 import androidx.compose.ui.platform.setContent
-import androidx.ui.tooling.preview.Preview
-import dev.shreyansh.tmdb.ui.TmDBTheme
+import androidx.core.view.WindowCompat
+import dagger.hilt.android.AndroidEntryPoint
+import dev.shreyansh.tmdb.ui.TmDBApp
+import dev.shreyansh.tmdb.ui.TmdbViewModel
 
-class MainActivity : AppCompatActivity() {
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+
+    private val viewModel: TmdbViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent {
-            TmDBTheme {
-                // A surface container using the 'background' color from the theme
-                Surface(color = MaterialTheme.colors.background) {
-                    Greeting("Android")
-                }
-            }
-        }
-    }
-}
+        // This app draws behind the system bars, so we want to handle fitting system windows
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
-@Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    TmDBTheme {
-        Greeting("Android")
+        setContent { TmDBApp(viewModel) }
     }
 }
