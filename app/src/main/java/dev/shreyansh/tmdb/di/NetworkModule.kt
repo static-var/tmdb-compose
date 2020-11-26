@@ -11,6 +11,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dev.shreyansh.tmdb.BuildConfig
 import dev.shreyansh.tmdb.data.api.TmdbService
+import dev.shreyansh.tmdb.utils.Constants
 import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -78,7 +79,7 @@ class NetworkModule {
 //        val contentType = "application/json".toMediaType()
         return Retrofit.Builder().apply {
             client(okHttpClient)
-            baseUrl("https://api.themoviedb.org/")
+            baseUrl(Constants.URL.BASE_URL)
             addConverterFactory(MoshiConverterFactory.create(moshi).asLenient())
             addCallAdapterFactory(CoroutinesResponseCallAdapterFactory())
         }.build()
