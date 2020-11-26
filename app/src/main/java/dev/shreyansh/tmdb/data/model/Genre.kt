@@ -4,6 +4,7 @@ import android.os.Parcelable
 import androidx.annotation.Keep
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import dev.shreyansh.tmdb.utils.Constants
 import kotlinx.android.parcel.Parcelize
@@ -14,6 +15,6 @@ import kotlinx.android.parcel.Parcelize
 @JsonClass(generateAdapter = true)
 data class Genre(
     @PrimaryKey
-    val id: Int = -1,
+    @Json(name = "id") val genreId: Int = -1,
     val name: String = ""
 ) : Parcelable
