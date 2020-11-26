@@ -1,14 +1,15 @@
 package dev.shreyansh.tmdb.ui
 
 import androidx.hilt.lifecycle.ViewModelInject
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
-import dev.shreyansh.tmdb.data.model.Genre
 import dev.shreyansh.tmdb.data.repository.TmdbRepository
 import dev.shreyansh.tmdb.di.IoDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class TmdbViewModel @ViewModelInject constructor(
@@ -16,18 +17,49 @@ class TmdbViewModel @ViewModelInject constructor(
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
-    fun getListOfGenre(): LiveData<List<Genre>> =
+    fun getListOfGenre() =
         liveData {
-            emitSource(
-                repository.getAllGenre()
-            )
+            emit(Loading())
+            repository.getAllGenre().collect {
+                if (it.isEmpty())
+                    getGenreFromNetwork()
+                else
+                    emit(Success(it))
+            }
         }
 
     fun getGenreFromNetwork() {
         viewModelScope.launch(ioDispatcher) {
-            viewModelScope.launch(ioDispatcher) {
-                repository.getAllGenreAndSave()
-            }
+            repository.getAllGenreAndSave()
         }
     }
+
+    fun getTrendingMoviesFromNetwork() {
+        viewModelScope.launch(ioDispatcher) {
+            repository.getMoviesAndSave()
+        }
+    }
+
+    fun getTrendingTvShowFromNetwork() {
+        viewModelScope.launch(ioDispatcher) {
+            repository.getTvShowAndSave()
+        }
+    }
+
+    fun getListTrendingMovies() =
+        liveData {
+            emitSource(repository.getMovies().map {
+                if (it.isEmpty())
+                    repository.getMoviesAndSave()
+                Success(it)
+            }.asLiveData(ioDispatcher))
+
+//            emitSource(repository.getMovies().asLiveData())
+//            repository.getMovies().collect {
+//                if (it.isEmpty())
+//                    repository.getMoviesAndSave()
+//                else
+//                    emit(Success(it))
+//            }
+        }
 }

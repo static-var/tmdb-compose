@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import dev.chrisbanes.accompanist.insets.statusBarsHeight
-import dev.shreyansh.tmdb.ui.TmDBAppBar
+import dev.shreyansh.tmdb.ui.TmdbAppBar
 
 @Composable
 fun AboutScreen(pop: () -> Unit, modifier: Modifier = Modifier.fillMaxWidth()) {
@@ -24,7 +24,7 @@ fun AboutScreen(pop: () -> Unit, modifier: Modifier = Modifier.fillMaxWidth()) {
             )
             Scaffold(
                 topBar = {
-                    TmDBAppBar(true, pop)
+                    TmdbAppBar(true, pop)
                 },
                 bodyContent = {
 
