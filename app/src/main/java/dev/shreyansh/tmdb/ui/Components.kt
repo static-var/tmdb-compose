@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import dev.shreyansh.tmdb.R
 
 @Composable
-fun TmDBAppBar(showBack: Boolean, backAction: () -> Unit = {}) {
+fun TmdbAppBar(showBack: Boolean, backAction: () -> Unit = {}) {
     Row(modifier = Modifier.height(56.dp).fillMaxWidth()) {
         Surface(color = Color.Transparent) {
             if (showBack) {
