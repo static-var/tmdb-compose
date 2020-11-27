@@ -53,13 +53,14 @@ class TmdbViewModel @ViewModelInject constructor(
                     repository.getMoviesAndSave()
                 Success(it)
             }.asLiveData(ioDispatcher))
+        }
 
-//            emitSource(repository.getMovies().asLiveData())
-//            repository.getMovies().collect {
-//                if (it.isEmpty())
-//                    repository.getMoviesAndSave()
-//                else
-//                    emit(Success(it))
-//            }
+    fun getListTrendingTvShows() =
+        liveData {
+            emitSource(repository.getTvShows().map {
+                if (it.isEmpty())
+                    repository.getTvShowAndSave()
+                Success(it)
+            }.asLiveData(ioDispatcher))
         }
 }
