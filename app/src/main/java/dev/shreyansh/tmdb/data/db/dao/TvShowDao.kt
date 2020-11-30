@@ -17,6 +17,6 @@ interface TvShowDao {
     @Query("SELECT * FROM tv_show")
     fun getAll(): Flow<List<TvShow>>
 
-    @Query("SELECT * FROM tv_show WHERE tvShowId = :ids")
-    fun getShow(ids: Int): Flow<TvShow>
+    @Query("SELECT * FROM tv_show WHERE tvShowId = :id")
+    fun getShow(id: Int): Flow<TvShow>
 }
