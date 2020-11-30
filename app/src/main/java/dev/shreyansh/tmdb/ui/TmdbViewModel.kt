@@ -1,10 +1,8 @@
 package dev.shreyansh.tmdb.ui
 
 import androidx.hilt.lifecycle.ViewModelInject
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.asLiveData
-import androidx.lifecycle.liveData
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
+import dev.shreyansh.tmdb.data.model.MediaContentType
 import dev.shreyansh.tmdb.data.repository.TmdbRepository
 import dev.shreyansh.tmdb.di.IoDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
@@ -63,4 +61,25 @@ class TmdbViewModel @ViewModelInject constructor(
                 Success(it)
             }.asLiveData(ioDispatcher))
         }
+
+    fun getMovieById(movieId: Int) =
+        liveData {
+            emitSource(repository.getMovieById(movieId).map { Success(it) }
+                .asLiveData(ioDispatcher))
+        }
+
+    fun getTvShowById(showId: Int) =
+        liveData {
+            emitSource(repository.getTvShowById(showId).map { Success(it) }
+                .asLiveData(ioDispatcher))
+        }
+
+    private val mode = MutableLiveData<MediaContentType>()
+
+    fun setUiMode(type: MediaContentType) {
+        mode.value = type
+    }
+
+    fun getUiMode() = liveData<MediaContentType> { emitSource(mode) }
+
 }

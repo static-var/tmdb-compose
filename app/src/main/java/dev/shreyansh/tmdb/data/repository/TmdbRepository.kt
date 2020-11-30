@@ -26,7 +26,7 @@ class TmdbRepository @Inject constructor(
     private val service: TmdbService,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) {
-    lateinit var genreList: List<Genre>
+    private lateinit var genreList: List<Genre>
 
     suspend fun getAllGenreAndSave() {
         service.getListOfMovieGenre().suspendOnSuccess {
@@ -64,7 +64,6 @@ class TmdbRepository @Inject constructor(
     suspend fun getMoviesAndSave() {
         service.getTrendingMovies().suspendOnSuccess {
             data?.let { response ->
-                e { " inserting value from api call " }
                 movieDao.insertAll(response.results)
             }
         }.suspendOnError {
@@ -131,4 +130,19 @@ class TmdbRepository @Inject constructor(
         }
         return movies
     }
+
+    suspend fun getMovieById(movieId: Int) = flow {
+        movieDao.getMovie(movieId).collect { movie ->
+            e {"Movie $movie"}
+            movie.genres = genreList.filter { it.genreId in movie.genreIds }
+            emit(movie)
+        }
+    }.flowOn(ioDispatcher)
+
+    suspend fun getTvShowById(showId: Int) = flow {
+        tvShowDao.getShow(showId).collect { tvShow ->
+            tvShow.genres = genreList.filter { it.genreId in tvShow.genreIds }
+            emit(tvShow)
+        }
+    }.flowOn(ioDispatcher)
 }
