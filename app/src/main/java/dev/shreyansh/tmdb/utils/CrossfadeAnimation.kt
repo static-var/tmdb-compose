@@ -16,7 +16,7 @@ fun NavGraphBuilder.composableWithCrossfade(
     content: @Composable (NavBackStackEntry) -> Unit
 ) {
     composable(route, arguments, deepLinks) { nav ->
-        Crossfade(current = Unit, animation = tween(1000)) {
+        Crossfade(current = Unit, animation = tween(500)) {
             content.invoke(nav)
         }
     }
