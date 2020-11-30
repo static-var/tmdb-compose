@@ -1,32 +1,36 @@
 package dev.shreyansh.tmdb.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.navigate
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.navigate
 import dev.shreyansh.tmdb.ui.navigation.Destinations.About
 import dev.shreyansh.tmdb.ui.navigation.Destinations.Actors
 import dev.shreyansh.tmdb.ui.navigation.Destinations.Movie
-import dev.shreyansh.tmdb.ui.navigation.Destinations.NavArgs.ActorId
-import dev.shreyansh.tmdb.ui.navigation.Destinations.NavArgs.MovieId
+import dev.shreyansh.tmdb.ui.navigation.Destinations.TvShow
 
 object Destinations {
     const val Home = "home"
     const val Movie = "movie"
+    const val TvShow = "tvShow"
     const val Actors = "actors"
     const val About = "about"
 
     object NavArgs {
         const val MovieId = "movieID"
+        const val TvShowId = "tvShowID"
         const val ActorId = "actorID"
     }
 }
 
 class Actions(navController: NavHostController) {
-    val openMovie: (Int) -> Unit = {
-        navController.navigate("$Movie/$MovieId")
+    val openMovie: (Int) -> Unit = { movieId ->
+        navController.navigate("$Movie/$movieId")
     }
-    val openActor: (Int) -> Unit = {
-        navController.navigate("$Actors/$ActorId")
+    val openTvShow: (Int) -> Unit = { tvShowId ->
+        navController.navigate("$TvShow/$tvShowId")
+    }
+    val openActor: (Int) -> Unit = { actorId ->
+        navController.navigate("$Actors/$actorId")
     }
     val openAbout: () -> Unit = {
         navController.navigate(About)

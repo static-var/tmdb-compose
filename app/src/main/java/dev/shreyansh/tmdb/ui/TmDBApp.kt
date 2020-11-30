@@ -9,9 +9,11 @@ import androidx.navigation.compose.rememberNavController
 import dev.chrisbanes.accompanist.insets.ProvideWindowInsets
 import dev.shreyansh.tmdb.ui.about.AboutScreen
 import dev.shreyansh.tmdb.ui.home.HomeScreen
+import dev.shreyansh.tmdb.ui.movie.MovieScreen
 import dev.shreyansh.tmdb.ui.navigation.Actions
 import dev.shreyansh.tmdb.ui.navigation.Destinations
 import dev.shreyansh.tmdb.ui.theme.TmDBTheme
+import dev.shreyansh.tmdb.ui.tvShows.TvShowScreen
 import dev.shreyansh.tmdb.utils.composableWithCrossfade
 
 @Composable
@@ -25,7 +27,9 @@ fun TmDBApp(viewModel: TmdbViewModel) {
                 composableWithCrossfade(Destinations.Home) {
                     HomeScreen(
                         viewModel,
-                        action.openAbout
+                        action.openAbout,
+                        action.openMovie,
+                        action.openTvShow,
                     )
                 }
                 composableWithCrossfade(Destinations.About) {
@@ -42,15 +46,24 @@ fun TmDBApp(viewModel: TmdbViewModel) {
 
                 }
                 composableWithCrossfade(
-                    "${Destinations.Movie}/${Destinations.NavArgs.MovieId}",
-                    arguments = listOf(navArgument(Destinations.NavArgs.ActorId) {
-                        type = NavType.StringType
+                    "${Destinations.Movie}/{${Destinations.NavArgs.MovieId}}",
+                    arguments = listOf(navArgument(Destinations.NavArgs.MovieId) {
+                        type = NavType.IntType
                     })
                 ) {
-
+                    val id = it.arguments?.getInt(Destinations.NavArgs.MovieId) ?: -1
+                    MovieScreen(viewModel = viewModel, movieId = id, navigateBack = action.pop)
+                }
+                composableWithCrossfade(
+                    "${Destinations.TvShow}/{${Destinations.NavArgs.TvShowId}}",
+                    arguments = listOf(navArgument(Destinations.NavArgs.TvShowId) {
+                        type = NavType.IntType
+                    })
+                ) {
+                    val id = it.arguments?.getInt(Destinations.NavArgs.TvShowId) ?: -1
+                    TvShowScreen(viewModel = viewModel, tvShowId = id, navigateBack = action.pop)
                 }
             }
-
         }
     }
 }

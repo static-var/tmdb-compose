@@ -1,6 +1,7 @@
 package dev.shreyansh.tmdb.ui.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumnFor
 import androidx.compose.material.*
@@ -10,7 +11,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ContextAmbient
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.transform.RoundedCornersTransformation
+import dev.chrisbanes.accompanist.coil.CoilImage
 import dev.chrisbanes.accompanist.insets.AmbientWindowInsets
 import dev.chrisbanes.accompanist.insets.statusBarsHeight
 import dev.chrisbanes.accompanist.insets.toPaddingValues
@@ -18,15 +22,18 @@ import dev.shreyansh.tmdb.data.model.MediaContentType
 import dev.shreyansh.tmdb.data.model.Movie
 import dev.shreyansh.tmdb.data.model.TvShow
 import dev.shreyansh.tmdb.ui.*
+import dev.shreyansh.tmdb.utils.Constants
 import dev.shreyansh.tmdb.utils.NetworkUtil
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
     viewModel: TmdbViewModel,
     openAbout: () -> Unit,
-    modifier: Modifier = Modifier.fillMaxSize()
+    openMovie: (Int) -> Unit,
+    openTvShow: (Int) -> Unit,
 ) {
-    Surface(modifier = modifier) {
+    Surface(modifier = Modifier.fillMaxSize()) {
         Column {
             Spacer(
                 Modifier
@@ -39,7 +46,7 @@ fun HomeScreen(
                     TmdbAppBar(showBack = false)
                 },
                 bodyContent = {
-                    HomeScreenContent(viewModel)
+                    HomeScreenContent(viewModel, openMovie, openTvShow)
                 }
 
             )
@@ -48,7 +55,7 @@ fun HomeScreen(
 }
 
 @Composable
-fun NoNetworkCard(viewModel: TmdbViewModel, network: () -> Unit) {
+fun NoNetworkCard(network: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(8.dp),
         backgroundColor = MaterialTheme.colors.primary,
@@ -73,32 +80,42 @@ fun NoNetworkCard(viewModel: TmdbViewModel, network: () -> Unit) {
 }
 
 @Composable
-fun HomeScreenContent(viewModel: TmdbViewModel) {
+fun HomeScreenContent(
+    viewModel: TmdbViewModel,
+    openMovie: (Int) -> Unit,
+    openTvShow: (Int) -> Unit
+) {
     val context = ContextAmbient.current
     var isConnected by remember { mutableStateOf(NetworkUtil.isConnected(context)) }
     val modifier = Modifier.fillMaxSize()
+    val coroutineScope = rememberCoroutineScope()
     Column(
         modifier = modifier
     ) {
         if (!isConnected) {
-            NoNetworkCard(viewModel = viewModel) {
+            NoNetworkCard {
                 isConnected = NetworkUtil.isConnected(context)
             }
         } else {
-            viewModel.getGenreFromNetwork()
-            viewModel.getTrendingMoviesFromNetwork()
-            viewModel.getTrendingTvShowFromNetwork()
+            coroutineScope.launch {
+                viewModel.getGenreFromNetwork()
+                viewModel.getTrendingMoviesFromNetwork()
+                viewModel.getTrendingTvShowFromNetwork()
+            }
         }
 
-        TmdbTabBar(modifier = modifier, viewModel = viewModel)
+        TmdbTabBarAndBody(modifier = modifier, viewModel = viewModel, openMovie, openTvShow)
     }
 }
 
 @Composable
-fun TmdbTabBar(
-    modifier: Modifier, viewModel: TmdbViewModel
+fun TmdbTabBarAndBody(
+    modifier: Modifier,
+    viewModel: TmdbViewModel,
+    openMovie: (Int) -> Unit,
+    openTvShow: (Int) -> Unit
 ) {
-    var tabState by remember { mutableStateOf(MediaContentType.MOVIE) }
+    val tabState by viewModel.getUiMode().observeAsState(MediaContentType.MOVIE)
 
     TabRow(
         selectedTabIndex = tabState.ordinal,
@@ -107,7 +124,7 @@ fun TmdbTabBar(
     ) {
         Tab(
             selected = tabState == MediaContentType.MOVIE,
-            onClick = { tabState = MediaContentType.MOVIE }) {
+            onClick = { viewModel.setUiMode(MediaContentType.MOVIE) }) {
             Text(
                 text = "Movies",
                 modifier = Modifier.padding(8.dp, 16.dp),
@@ -116,7 +133,7 @@ fun TmdbTabBar(
         }
         Tab(
             selected = tabState == MediaContentType.TVSHOW,
-            onClick = { tabState = MediaContentType.TVSHOW }) {
+            onClick = { viewModel.setUiMode(MediaContentType.TVSHOW) }) {
             Text(
                 text = "TV Shows",
                 modifier = Modifier.padding(8.dp, 16.dp),
@@ -127,39 +144,27 @@ fun TmdbTabBar(
 
     when (tabState) {
         MediaContentType.MOVIE -> {
-            TmdbMovieList(modifier = modifier, viewModel = viewModel)
+            TmdbMovieList(modifier = modifier, viewModel = viewModel, openMovie)
         }
         MediaContentType.TVSHOW -> {
-            TmdbTvShowList(modifier = modifier, viewModel = viewModel)
+            TmdbTvShowList(modifier = modifier, viewModel = viewModel, openTvShow)
         }
     }
 }
 
 @Composable
-fun TmdbMovieList(modifier: Modifier, viewModel: TmdbViewModel) {
+fun TmdbMovieList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) -> Unit) {
 
     val movieUIState: UiState<List<Movie>> by viewModel.getListTrendingMovies()
         .observeAsState(initial = Loading())
 
     when (movieUIState) {
         is Loading -> {
-            Column(
-                modifier = modifier,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            LoadingUi(modifier = modifier)
         }
         is Error -> {
             val error = (movieUIState as Error).errorMessage
-            Column(
-                modifier = modifier,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(text = error)
-            }
+            ErrorUi(modifier = modifier, errorMessage = error)
         }
         is Success -> {
             val data = (movieUIState as Success).data
@@ -169,7 +174,7 @@ fun TmdbMovieList(modifier: Modifier, viewModel: TmdbViewModel) {
                     contentPadding = AmbientWindowInsets.current.systemBars
                         .toPaddingValues(top = false)
                 ) { item ->
-                    Text(text = item.title, modifier = Modifier.padding(8.dp))
+                    MovieItem(movie = item, action)
                 }
             }
         }
@@ -177,41 +182,139 @@ fun TmdbMovieList(modifier: Modifier, viewModel: TmdbViewModel) {
 }
 
 @Composable
-fun TmdbTvShowList(modifier: Modifier, viewModel: TmdbViewModel) {
+fun TmdbTvShowList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) -> Unit) {
 
     val movieUIState: UiState<List<TvShow>> by viewModel.getListTrendingTvShows()
         .observeAsState(initial = Loading())
 
     when (movieUIState) {
         is Loading -> {
-            Column(
-                modifier = modifier,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                CircularProgressIndicator()
-            }
+            LoadingUi(modifier = modifier)
         }
         is Error -> {
             val error = (movieUIState as Error).errorMessage
-            Column(
-                modifier = modifier,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(text = error)
-            }
+            ErrorUi(modifier = modifier, errorMessage = error)
         }
         is Success -> {
             val data = (movieUIState as Success).data
-            Box(modifier = modifier) {
+            Column(modifier = modifier) {
                 LazyColumnFor(
                     items = data,
                     contentPadding = AmbientWindowInsets.current.systemBars
                         .toPaddingValues(top = false)
                 ) { item ->
-                    Text(text = item.name, modifier = Modifier.padding(8.dp))
+                    TvShowItem(tvShow = item, action)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun MovieItem(movie: Movie, action: (Int) -> Unit) {
+    Card(
+        Modifier.fillMaxWidth().clickable(onClick = {
+            action(movie.movieId)
+        }).padding(8.dp),
+        elevation = 8.dp
+    ) {
+        Row {
+            CoilImage(
+                data = "${Constants.URL.POSTER_URL}${movie.poster}",
+                modifier = Modifier.size(80.dp, 108.dp).padding(8.dp),
+                fadeIn = true,
+                requestBuilder = {
+                    transformations(RoundedCornersTransformation(16f))
+                },
+                loading = {
+                    Box {
+                        CircularProgressIndicator(
+                            Modifier.align(Alignment.Center),
+                            color = MaterialTheme.colors.primary
+                        )
+                    }
+                }
+            )
+            Column(modifier = Modifier.fillMaxHeight()) {
+                Text(
+                    text = movie.title,
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp, end = 8.dp),
+                    style = MaterialTheme.typography.subtitle1,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = movie.genres.map { it.name }.toString().removePrefix("[")
+                        .removeSuffix("]"),
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    style = MaterialTheme.typography.body2,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "Release Date : ${movie.releaseDate}",
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    style = MaterialTheme.typography.body2,
+                )
+                Text(
+                    text = "Rating : ${movie.rating}",
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    style = MaterialTheme.typography.body2,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun TvShowItem(tvShow: TvShow, action: (Int) -> Unit) {
+    Card(
+        Modifier.fillMaxWidth().clickable(onClick = { action.invoke(tvShow.tvShowId) })
+            .padding(8.dp), elevation = 8.dp
+    ) {
+        Row {
+            CoilImage(
+                data = "${Constants.URL.POSTER_URL}${tvShow.poster}",
+                modifier =  Modifier.size(80.dp, 108.dp).padding(8.dp),
+                fadeIn = true,
+                requestBuilder = {
+                    transformations(RoundedCornersTransformation(16f))
+                },
+                loading = {
+                    Box {
+                        CircularProgressIndicator(
+                            Modifier.align(Alignment.Center),
+                            color = MaterialTheme.colors.primary
+                        )
+                    }
+                }
+            )
+            Column(modifier = Modifier.fillMaxHeight()) {
+                Text(
+                    text = tvShow.name,
+                    modifier = Modifier.padding(start = 8.dp, top = 4.dp, end = 8.dp),
+                    style = MaterialTheme.typography.subtitle1,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = tvShow.genres.map { it.name }.toString().removePrefix("[")
+                        .removeSuffix("]"),
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    style = MaterialTheme.typography.body2,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "First Air date : ${tvShow.firstAirDate}",
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    style = MaterialTheme.typography.body2,
+                )
+                Text(
+                    text = "Rating : ${tvShow.rating}",
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    style = MaterialTheme.typography.body2,
+                )
             }
         }
     }
