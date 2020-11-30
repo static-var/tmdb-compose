@@ -2,7 +2,6 @@ package dev.shreyansh.tmdb.ui.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.font.font
 import androidx.compose.ui.text.font.fontFamily
@@ -10,9 +9,9 @@ import androidx.compose.ui.unit.sp
 import dev.shreyansh.tmdb.R
 
 // Set of Material typography styles to start with
-val regular = font(R.font.jetbrains_mono_regular)
-val medium = font(R.font.jetbrains_mono_medium, FontWeight.W500)
-val bold = font(R.font.jetbrains_mono_bold, FontWeight.W600)
+val regular = font(R.font.firesans_light)
+val medium = font(R.font.firesans_regular, FontWeight.W500)
+val bold = font(R.font.firesans_bold, FontWeight.W600)
 
 val appFontFamily = fontFamily(
         fonts = listOf(

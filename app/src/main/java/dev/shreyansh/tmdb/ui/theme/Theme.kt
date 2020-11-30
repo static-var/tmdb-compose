@@ -7,15 +7,15 @@ import androidx.compose.material.lightColors
 import androidx.compose.runtime.Composable
 
 private val DarkColorPalette = darkColors(
-    primary = tmdbBGColor,
-    primaryVariant = tmdbBGColor,
-    secondary = tmdbBGColor
+    primary = tmdbGradientStartColor,
+    primaryVariant = tmdbGradientEndColor,
+    secondary = tmdbGradientStartColor
 )
 
 private val LightColorPalette = lightColors(
-    primary = tmdbBGColor,
-    primaryVariant = tmdbBGColor,
-    secondary = tmdbBGColor
+    primary = tmdbGradientStartColor,
+    primaryVariant = tmdbGradientStartColor,
+    secondary = tmdbGradientStartColor
 )
 
 @Composable
