@@ -3,11 +3,14 @@ package dev.shreyansh.tmdb.data.model
 import android.os.Parcelable
 import androidx.annotation.Keep
 import androidx.room.Entity
+import androidx.room.Ignore
 import androidx.room.PrimaryKey
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import dev.shreyansh.tmdb.utils.Constants
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
+
 
 @Entity(tableName = Constants.Database.MOVIE_TABLE)
 @Parcelize
@@ -27,5 +30,7 @@ data class Movie(
     @Json(name = "backdrop_path") val backdrop: String = "",
     @Json(name = "genre_ids") val genreIds: List<Int> = listOf()
 ) : Parcelable {
+    @IgnoredOnParcel
+    @Ignore
     var genres: List<Genre> = listOf()
 }

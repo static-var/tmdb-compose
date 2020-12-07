@@ -37,7 +37,7 @@ class TmdbRepository @Inject constructor(
         }.suspendOnError {
             e { message() }
         }.suspendOnException {
-            e { exception.localizedMessage }
+            e { exception.localizedMessage ?: exception.message ?: exception.stackTraceToString() }
         }
 
         service.getListOfTvShowGenre().suspendOnSuccess {
@@ -47,7 +47,7 @@ class TmdbRepository @Inject constructor(
         }.suspendOnError {
             e { message() }
         }.suspendOnException {
-            e { exception.localizedMessage }
+            e { exception.localizedMessage ?: exception.message ?: exception.stackTraceToString() }
         }
     }
 
@@ -69,7 +69,7 @@ class TmdbRepository @Inject constructor(
         }.suspendOnError {
             e { message() }
         }.suspendOnException {
-            e { exception.localizedMessage }
+            e { exception.localizedMessage ?: exception.message ?: exception.stackTraceToString() }
         }
     }
 
@@ -81,7 +81,7 @@ class TmdbRepository @Inject constructor(
         }.suspendOnError {
             e { message() }
         }.suspendOnException {
-            e { exception.localizedMessage }
+            e { exception.localizedMessage ?: exception.message ?: exception.stackTraceToString() }
         }
     }
 

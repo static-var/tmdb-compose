@@ -22,13 +22,13 @@ fun TmdbAppBar(showBack: Boolean, backAction: () -> Unit = {}) {
             if (showBack) {
                 IconButton(onClick = backAction) {
                     Icon(
-                        asset = vectorResource(id = R.drawable.ic_baseline_arrow_back),
+                        imageVector = vectorResource(id = R.drawable.ic_baseline_arrow_back),
                         modifier = Modifier.padding(4.dp)
                     )
                 }
             } else {
                 Image(
-                    asset = vectorResource(id = R.drawable.ic_tmdb_logo),
+                    imageVector = vectorResource(id = R.drawable.ic_tmdb_logo),
                     modifier = Modifier.padding(8.dp)
                 )
             }

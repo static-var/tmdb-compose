@@ -7,7 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.platform.ContextAmbient
+import androidx.compose.ui.platform.AmbientContext
 import androidx.core.graphics.drawable.toBitmap
 import androidx.palette.graphics.Palette
 import coil.Coil
@@ -22,7 +22,7 @@ import kotlin.math.min
 
 @Composable
 fun getColorsFromImageOrTheme(
-    context: Context = ContextAmbient.current,
+    context: Context = AmbientContext.current,
     themeColors: Colors = MaterialTheme.colors,
     backdropUrl: String,
     posterUrl: String
@@ -91,7 +91,7 @@ suspend fun calculateSwatchesInImage(
             var c3: Color? = null
             palette.vibrantSwatch?.let { swatch ->
                 if (Color(swatch.rgb).constrastAgainst(surfaceColor) >= ContrastValue) {
-                    e {"C1 from vibrant"}
+                    e { "C1 from vibrant" }
                     c1 = Color(swatch.rgb)
                 }
                 if (Color(swatch.titleTextColor).constrastAgainst(surfaceColor) >= ContrastValue) {
@@ -119,7 +119,7 @@ suspend fun calculateSwatchesInImage(
             if (c1 != null && c2 != null)
                 dominantColor = DominantColors(c1!!, c2!!, c3!!)
             else
-                e {"Using theme colors"}
+                e { "Using theme colors" }
 
             dominantColor
         }

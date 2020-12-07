@@ -8,7 +8,8 @@ import androidx.room.PrimaryKey
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import dev.shreyansh.tmdb.utils.Constants
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
 
 @Entity(tableName = Constants.Database.TV_SHOW_TABLE)
 @Parcelize
@@ -27,6 +28,7 @@ data class TvShow(
     @Json(name = "backdrop_path") val backdrop: String = "",
     @Json(name = "genre_ids") val genreIds: List<Int> = listOf()
 ) : Parcelable {
+    @IgnoredOnParcel
     @Ignore
     var genres: List<Genre> = listOf()
 }

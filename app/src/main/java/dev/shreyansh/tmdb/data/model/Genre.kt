@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import dev.shreyansh.tmdb.utils.Constants
-import kotlinx.android.parcel.Parcelize
+import kotlinx.parcelize.Parcelize
 
 @Entity(tableName = Constants.Database.GENRE_TABLE)
 @Parcelize

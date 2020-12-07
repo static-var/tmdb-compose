@@ -9,7 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.ContextAmbient
+import androidx.compose.ui.platform.AmbientContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,7 +85,7 @@ fun HomeScreenContent(
     openMovie: (Int) -> Unit,
     openTvShow: (Int) -> Unit
 ) {
-    val context = ContextAmbient.current
+    val context = AmbientContext.current
     var isConnected by remember { mutableStateOf(NetworkUtil.isConnected(context)) }
     val modifier = Modifier.fillMaxSize()
     val coroutineScope = rememberCoroutineScope()
@@ -275,7 +275,7 @@ fun TvShowItem(tvShow: TvShow, action: (Int) -> Unit) {
         Row {
             CoilImage(
                 data = "${Constants.URL.POSTER_URL}${tvShow.poster}",
-                modifier =  Modifier.size(80.dp, 108.dp).padding(8.dp),
+                modifier = Modifier.size(80.dp, 108.dp).padding(8.dp),
                 fadeIn = true,
                 requestBuilder = {
                     transformations(RoundedCornersTransformation(16f))

@@ -1,7 +1,7 @@
 package dev.shreyansh.tmdb.di
 
 import android.os.Environment
-import com.github.ajalt.timberkt.w
+import com.github.ajalt.timberkt.d
 import com.skydoves.sandwich.coroutines.CoroutinesResponseCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -27,7 +27,7 @@ class NetworkModule {
     @Provides
     @Singleton
     fun provideHttpLoggingInterceptor(): HttpLoggingInterceptor {
-        val logging = HttpLoggingInterceptor { message -> w { message } }
+        val logging = HttpLoggingInterceptor { message -> d { message } }
         return logging.apply {
             level = if (BuildConfig.DEBUG) {
                 HttpLoggingInterceptor.Level.BODY
