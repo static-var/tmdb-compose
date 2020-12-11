@@ -31,3 +31,7 @@ fun TmDBTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable()
         content = content
     )
 }
+
+@Composable
+val TmDBTheme
+    get() = MaterialTheme
