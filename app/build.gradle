@@ -99,7 +99,6 @@ dependencies {
     kapt("com.squareup.moshi:moshi-kotlin-codegen:1.11.0")
 
     implementation "com.squareup.okhttp3:logging-interceptor:4.9.0"
-    implementation "com.github.skydoves:sandwich:1.0.6"
 
 
     // Hilt

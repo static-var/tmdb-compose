@@ -2,7 +2,6 @@ package dev.shreyansh.tmdb.di
 
 import android.os.Environment
 import com.github.ajalt.timberkt.d
-import com.skydoves.sandwich.coroutines.CoroutinesResponseCallAdapterFactory
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import dagger.Module
@@ -81,7 +80,6 @@ class NetworkModule {
             client(okHttpClient)
             baseUrl(Constants.URL.BASE_URL)
             addConverterFactory(MoshiConverterFactory.create(moshi).asLenient())
-            addCallAdapterFactory(CoroutinesResponseCallAdapterFactory())
         }.build()
     }
 
