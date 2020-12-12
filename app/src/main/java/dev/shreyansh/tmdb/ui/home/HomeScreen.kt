@@ -22,6 +22,7 @@ import dev.shreyansh.tmdb.data.model.MediaContentType
 import dev.shreyansh.tmdb.data.model.Movie
 import dev.shreyansh.tmdb.data.model.TvShow
 import dev.shreyansh.tmdb.ui.*
+import dev.shreyansh.tmdb.ui.theme.TmDBTheme
 import dev.shreyansh.tmdb.utils.Constants
 import dev.shreyansh.tmdb.utils.NetworkUtil
 import kotlinx.coroutines.launch
@@ -98,9 +99,9 @@ fun HomeScreenContent(
             }
         } else {
             coroutineScope.launch {
-                viewModel.getGenreFromNetwork()
-                viewModel.getTrendingMoviesFromNetwork()
-                viewModel.getTrendingTvShowFromNetwork()
+                viewModel.refreshGenre()
+                viewModel.refreshTvShows()
+                viewModel.refreshMovies()
             }
         }
 
@@ -155,7 +156,7 @@ fun TmdbTabBarAndBody(
 @Composable
 fun TmdbMovieList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) -> Unit) {
 
-    val movieUIState: UiState<List<Movie>> by viewModel.getListTrendingMovies()
+    val movieUIState: UiState<List<Movie>> by viewModel.getMovies()
         .observeAsState(initial = Loading())
 
     when (movieUIState) {
@@ -184,19 +185,19 @@ fun TmdbMovieList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) ->
 @Composable
 fun TmdbTvShowList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) -> Unit) {
 
-    val movieUIState: UiState<List<TvShow>> by viewModel.getListTrendingTvShows()
+    val showUIState: UiState<List<TvShow>> by viewModel.getTvShows()
         .observeAsState(initial = Loading())
 
-    when (movieUIState) {
+    when (showUIState) {
         is Loading -> {
             LoadingUi(modifier = modifier)
         }
         is Error -> {
-            val error = (movieUIState as Error).errorMessage
+            val error = (showUIState as Error).errorMessage
             ErrorUi(modifier = modifier, errorMessage = error)
         }
         is Success -> {
-            val data = (movieUIState as Success).data
+            val data = (showUIState as Success).data
             Column(modifier = modifier) {
                 LazyColumnFor(
                     items = data,
@@ -213,10 +214,12 @@ fun TmdbTvShowList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) -
 @Composable
 fun MovieItem(movie: Movie, action: (Int) -> Unit) {
     Card(
-        Modifier.fillMaxWidth().clickable(onClick = {
-            action(movie.movieId)
-        }).padding(8.dp),
-        elevation = 8.dp
+        Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+            .clickable(onClick = { action(movie.movieId) }),
+        elevation = 8.dp,
+        shape = TmDBTheme.shapes.medium
     ) {
         Row {
             CoilImage(
@@ -269,8 +272,12 @@ fun MovieItem(movie: Movie, action: (Int) -> Unit) {
 @Composable
 fun TvShowItem(tvShow: TvShow, action: (Int) -> Unit) {
     Card(
-        Modifier.fillMaxWidth().clickable(onClick = { action.invoke(tvShow.tvShowId) })
-            .padding(8.dp), elevation = 8.dp
+        Modifier
+            .fillMaxWidth()
+            .padding(8.dp)
+            .clickable(onClick = { action.invoke(tvShow.tvShowId) }),
+        elevation = 8.dp,
+        shape = TmDBTheme.shapes.medium
     ) {
         Row {
             CoilImage(

@@ -1,10 +1,9 @@
 package dev.shreyansh.tmdb.data.repository
 
-import com.github.ajalt.timberkt.Timber.e
-import com.skydoves.sandwich.message
-import com.skydoves.sandwich.suspendOnError
-import com.skydoves.sandwich.suspendOnException
-import com.skydoves.sandwich.suspendOnSuccess
+import com.dropbox.android.external.store4.Fetcher
+import com.dropbox.android.external.store4.SourceOfTruth
+import com.dropbox.android.external.store4.StoreBuilder
+import com.dropbox.android.external.store4.fresh
 import dev.shreyansh.tmdb.data.api.TmdbService
 import dev.shreyansh.tmdb.data.db.dao.GenreDao
 import dev.shreyansh.tmdb.data.db.dao.MovieDao
@@ -14,8 +13,6 @@ import dev.shreyansh.tmdb.data.model.Movie
 import dev.shreyansh.tmdb.data.model.TvShow
 import dev.shreyansh.tmdb.di.IoDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
 
@@ -28,121 +25,58 @@ class TmdbRepository @Inject constructor(
 ) {
     private lateinit var genreList: List<Genre>
 
-    suspend fun getAllGenreAndSave() {
-        service.getListOfMovieGenre().suspendOnSuccess {
-            data?.let { response ->
-                genreList = response.genres
-                genreDao.insertAll(response.genres)
-            }
-        }.suspendOnError {
-            e { message() }
-        }.suspendOnException {
-            e { exception.localizedMessage ?: exception.message ?: exception.stackTraceToString() }
-        }
+    fun tvShowStore() = StoreBuilder.from(
+        fetcher = Fetcher.of { _ ->
+            val show = service.getTrendingShows().results
+            if (::genreList.isInitialized.not())
+                genreList = genreStore().fresh("")
+            mapGenreToTvShows(show, genreList)
+        },
+        sourceOfTruth = SourceOfTruth.of(
+            reader = { tvShowDao.getAll() },
+            writer = { _, list -> tvShowDao.insertAll(list) }
+        )
+    ).build()
 
-        service.getListOfTvShowGenre().suspendOnSuccess {
-            data?.let { response ->
-                genreDao.insertAll(response.genres)
+    fun movieStore() = StoreBuilder.from(
+        fetcher = Fetcher.of { _ ->
+            val movies = service.getTrendingMovies().results
+            if (::genreList.isInitialized.not())
+                genreList = genreStore().fresh("")
+            mapGenreToMovie(movies, genreList)
+        },
+        sourceOfTruth = SourceOfTruth.of(
+            reader = { movieDao.getAll() },
+            writer = { _, list ->
+                movieDao.insertAll(list)
             }
-        }.suspendOnError {
-            e { message() }
-        }.suspendOnException {
-            e { exception.localizedMessage ?: exception.message ?: exception.stackTraceToString() }
-        }
+        )
+    ).build()
+
+    fun genreStore() = StoreBuilder.from(
+        fetcher = Fetcher.of { _ ->
+            service.getListOfMovieGenre().genres
+                .plus(service.getListOfTvShowGenre().genres)
+                .distinctBy { it.genreId }
+                .also { genreList = it }
+        },
+        sourceOfTruth = SourceOfTruth.of(
+            reader = { genreDao.getAll() },
+            writer = { _, list -> genreDao.insertAll(list) }
+        )
+    ).build()
+
+    private fun mapGenreToTvShows(tvShow: List<TvShow>, genre: List<Genre>) = tvShow.map { show ->
+        show.genres = genre.filter { it.genreId in show.genreIds }
+        show
     }
 
-    suspend fun getAllGenre() = flow {
-        genreDao.getAll().collect {
-            if (it.isEmpty()) {
-                getAllGenreAndSave()
-            } else {
-                emit(it)
-            }
-        }
-    }.flowOn(ioDispatcher)
-
-    suspend fun getMoviesAndSave() {
-        service.getTrendingMovies().suspendOnSuccess {
-            data?.let { response ->
-                movieDao.insertAll(response.results)
-            }
-        }.suspendOnError {
-            e { message() }
-        }.suspendOnException {
-            e { exception.localizedMessage ?: exception.message ?: exception.stackTraceToString() }
-        }
+    private fun mapGenreToMovie(movies: List<Movie>, genre: List<Genre>) = movies.map { movie ->
+        movie.genres = genre.filter { it.genreId in movie.genreIds }
+        movie
     }
 
-    suspend fun getTvShowAndSave() {
-        service.getTrendingShows().suspendOnSuccess {
-            data?.let { response ->
-                tvShowDao.insertAll(response.results)
-            }
-        }.suspendOnError {
-            e { message() }
-        }.suspendOnException {
-            e { exception.localizedMessage ?: exception.message ?: exception.stackTraceToString() }
-        }
-    }
+    fun getMovieById(movieId: Int) = movieDao.getMovie(movieId).flowOn(ioDispatcher)
 
-    suspend fun getMovies() = flow {
-        movieDao.getAll().collect { movies ->
-            if (movies.isEmpty())
-                getMoviesAndSave()
-            else {
-                if (::genreList.isInitialized.not()) {
-                    genreDao.getAll().collect {
-                        genreList = it
-                        emit(mapGenreToMovie(movies, genreList))
-                    }
-                } else
-                    emit(mapGenreToMovie(movies, genreList))
-            }
-        }
-    }.flowOn(ioDispatcher)
-
-    suspend fun getTvShows() = flow {
-        tvShowDao.getAll().collect { shows ->
-            if (shows.isEmpty()) {
-                getTvShowAndSave()
-            } else {
-                if (::genreList.isInitialized.not())
-                    genreDao.getAll().collect {
-                        genreList = it
-                        emit(mapGenreToTvShows(shows, genreList))
-                    }
-                else
-                    emit(mapGenreToTvShows(shows, genreList))
-            }
-        }
-    }.flowOn(ioDispatcher)
-
-    private fun mapGenreToTvShows(tvShow: List<TvShow>, genre: List<Genre>): List<TvShow> {
-        tvShow.forEach { show ->
-            show.genres = genre.filter { it.genreId in show.genreIds }
-        }
-        return tvShow
-    }
-
-    private fun mapGenreToMovie(movies: List<Movie>, genre: List<Genre>): List<Movie> {
-        movies.forEach { movie ->
-            movie.genres = genre.filter { it.genreId in movie.genreIds }
-        }
-        return movies
-    }
-
-    suspend fun getMovieById(movieId: Int) = flow {
-        movieDao.getMovie(movieId).collect { movie ->
-            e {"Movie $movie"}
-            movie.genres = genreList.filter { it.genreId in movie.genreIds }
-            emit(movie)
-        }
-    }.flowOn(ioDispatcher)
-
-    suspend fun getTvShowById(showId: Int) = flow {
-        tvShowDao.getShow(showId).collect { tvShow ->
-            tvShow.genres = genreList.filter { it.genreId in tvShow.genreIds }
-            emit(tvShow)
-        }
-    }.flowOn(ioDispatcher)
+    fun getTvShowById(showId: Int) = tvShowDao.getShow(showId).flowOn(ioDispatcher)
 }

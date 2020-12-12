@@ -2,7 +2,12 @@ package dev.shreyansh.tmdb.ui
 
 import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.*
+import com.dropbox.android.external.store4.StoreRequest
+import com.dropbox.android.external.store4.StoreResponse
+import com.dropbox.android.external.store4.fresh
 import dev.shreyansh.tmdb.data.model.MediaContentType
+import dev.shreyansh.tmdb.data.model.Movie
+import dev.shreyansh.tmdb.data.model.TvShow
 import dev.shreyansh.tmdb.data.repository.TmdbRepository
 import dev.shreyansh.tmdb.di.IoDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
@@ -14,53 +19,6 @@ class TmdbViewModel @ViewModelInject constructor(
     private val repository: TmdbRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
-
-    fun getListOfGenre() =
-        liveData {
-            emit(Loading())
-            repository.getAllGenre().collect {
-                if (it.isEmpty())
-                    getGenreFromNetwork()
-                else
-                    emit(Success(it))
-            }
-        }
-
-    fun getGenreFromNetwork() {
-        viewModelScope.launch(ioDispatcher) {
-            repository.getAllGenreAndSave()
-        }
-    }
-
-    fun getTrendingMoviesFromNetwork() {
-        viewModelScope.launch(ioDispatcher) {
-            repository.getMoviesAndSave()
-        }
-    }
-
-    fun getTrendingTvShowFromNetwork() {
-        viewModelScope.launch(ioDispatcher) {
-            repository.getTvShowAndSave()
-        }
-    }
-
-    fun getListTrendingMovies() =
-        liveData {
-            emitSource(repository.getMovies().map {
-                if (it.isEmpty())
-                    repository.getMoviesAndSave()
-                Success(it)
-            }.asLiveData(ioDispatcher))
-        }
-
-    fun getListTrendingTvShows() =
-        liveData {
-            emitSource(repository.getTvShows().map {
-                if (it.isEmpty())
-                    repository.getTvShowAndSave()
-                Success(it)
-            }.asLiveData(ioDispatcher))
-        }
 
     fun getMovieById(movieId: Int) =
         liveData {
@@ -81,5 +39,67 @@ class TmdbViewModel @ViewModelInject constructor(
     }
 
     fun getUiMode() = liveData<MediaContentType> { emitSource(mode) }
+
+    fun getMovies() = liveData<UiState<List<Movie>>>(ioDispatcher) {
+        repository.movieStore().stream(StoreRequest.cached("", false))
+            .collect { storeResponse ->
+                when (storeResponse) {
+                    is StoreResponse.Loading -> emit(Loading())
+                    is StoreResponse.Data -> {
+                        val data = storeResponse.value
+                        if (data.isNotEmpty())
+                            emit(Success(data))
+                        else
+                            emit(Loading())
+                    }
+                    is StoreResponse.Error.Exception -> emit(
+                        Error(
+                            storeResponse.error.message ?: "Unable to fetch data!6"
+                        )
+                    )
+                    is StoreResponse.Error.Message -> emit(Error(storeResponse.message))
+                }
+            }
+    }
+
+    fun getTvShows() = liveData<UiState<List<TvShow>>>(ioDispatcher) {
+        repository.tvShowStore().stream(StoreRequest.cached("", false))
+            .collect { storeResponse ->
+                when (storeResponse) {
+                    is StoreResponse.Loading -> emit(Loading())
+                    is StoreResponse.Data -> {
+                        val data = storeResponse.value
+                        if (data.isNotEmpty())
+                            emit(Success(data))
+                        else
+                            emit(Loading())
+                    }
+                    is StoreResponse.Error.Exception -> emit(
+                        Error(
+                            storeResponse.error.message ?: "Unable to fetch data!6"
+                        )
+                    )
+                    is StoreResponse.Error.Message -> emit(Error(storeResponse.message))
+                }
+            }
+    }
+
+    fun refreshMovies() {
+        viewModelScope.launch {
+            repository.movieStore().fresh("")
+        }
+    }
+
+    fun refreshTvShows() {
+        viewModelScope.launch {
+            repository.tvShowStore().fresh("")
+        }
+    }
+
+    fun refreshGenre() {
+        viewModelScope.launch {
+            repository.genreStore().fresh("")
+        }
+    }
 
 }
