@@ -1,6 +1,11 @@
 # TmDB
 Application built with Jetpack Compose which uses TmDB as data source.
 
+To get this app running add your API KEY to `local.properties` as shown below, if you don't have one you can easily get one from [here](https://www.themoviedb.org/settings/api) after creating a free account.
+```
+api="<your-api-key>"
+```
+
 SDK levels supported 
 --------------
 
@@ -19,7 +24,7 @@ Built With 🛠
 - [Navigation](https://developer.android.com/jetpack/compose/navigation) - For naviation between composables.
 - [Hilt](https://dagger.dev/hilt/) - Dependency Injection Framework
 - [Material Components for Android](https://github.com/material-components/material-components-android) - Modular and customizable Material Design UI components for Android.
-- [Accompanist](https://github.com/chrisbanes/accompanist) - Accompanist is a group of libraries that contains some utilities which I've found myself copying around projects which use Jetpack Compose.
+- [Accompanist](https://google.github.io/accompanist/) - Accompanist is a group of libraries that contains some utilities which I've found myself copying around projects which use Jetpack Compose.
 - [Moshi](https://github.com/square/moshi) - Moshi is a modern JSON library for Android and Java, to ease the process of parsing JSON.
 - [Retrofit](https://github.com/square/retrofit) - A type-safe HTTP client for Android and Java.
 - [Store](https://github.com/dropbox/Store) - Store is a Kotlin library for loading data from remote and local sources.
