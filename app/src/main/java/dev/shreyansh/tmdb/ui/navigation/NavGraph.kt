@@ -1,8 +1,6 @@
 package dev.shreyansh.tmdb.ui.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.navigate
+import androidx.navigation.NavController
 import dev.shreyansh.tmdb.ui.navigation.Destinations.About
 import dev.shreyansh.tmdb.ui.navigation.Destinations.Actors
 import dev.shreyansh.tmdb.ui.navigation.Destinations.Movie
@@ -22,7 +20,7 @@ object Destinations {
     }
 }
 
-class Actions(navController: NavHostController) {
+class Actions(navController: NavController) {
     val openMovie: (Int) -> Unit = { movieId ->
         navController.navigate("$Movie/$movieId")
     }
@@ -38,9 +36,4 @@ class Actions(navController: NavHostController) {
     val pop: () -> Unit = {
         navController.popBackStack()
     }
-}
-
-@Composable
-fun NavigationSetup(navController: NavHostController) {
-
 }

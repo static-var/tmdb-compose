@@ -1,9 +1,7 @@
 package dev.shreyansh.tmdb.ui.movie
 
 import android.content.Context
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ScrollableColumn
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
@@ -12,15 +10,17 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.AmbientContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.transform.BlurTransformation
 import coil.transform.RoundedCornersTransformation
-import dev.chrisbanes.accompanist.coil.CoilImage
-import dev.chrisbanes.accompanist.insets.navigationBarsHeight
-import dev.chrisbanes.accompanist.insets.statusBarsHeight
+import com.google.accompanist.coil.rememberCoilPainter
+import com.google.accompanist.imageloading.ImageLoadState
+import com.google.accompanist.insets.navigationBarsHeight
+import com.google.accompanist.insets.statusBarsHeight
 import dev.shreyansh.tmdb.data.model.Movie
 import dev.shreyansh.tmdb.ui.*
 import dev.shreyansh.tmdb.ui.home.ErrorUi
@@ -60,120 +60,153 @@ fun MovieScreen(viewModel: TmdbViewModel, movieId: Int, navigateBack: () -> Unit
 
 @Composable
 fun MovieUi(
-    context: Context = AmbientContext.current,
+    context: Context = LocalContext.current,
     movie: Movie,
     pop: () -> Unit,
     colors: DominantColors
 ) {
-    ScrollableColumn(Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Box(modifier = Modifier.aspectRatio(1f).fillMaxWidth()) {
-                CoilImage(
-                    data = "${Constants.URL.BACKDROP_URL}${movie.backdrop}",
-                    modifier = Modifier.fillMaxSize(),
-                    fadeIn = true,
-                    requestBuilder = {
-                        transformations(
-                            listOf(
-                                RoundedCornersTransformation(0f),
-                                BlurTransformation(context, 10f, 4.5f)
-                            )
-                        )
-                    },
-                    loading = {
-                        Box {
-                            CircularProgressIndicator(
-                                Modifier.align(Alignment.Center),
-                                color = MaterialTheme.colors.primary
-                            )
-                        }
-                    }
+    val backdropPainter = rememberCoilPainter(
+        request = "${Constants.URL.BACKDROP_URL}${movie.backdrop}",
+        requestBuilder = {
+            transformations(
+                listOf(
+                    RoundedCornersTransformation(0f),
+                    BlurTransformation(context, 8f, 2f)
                 )
-                Column(
-                    modifier = Modifier.fillMaxSize().background(Color.Transparent)
-                ) {
-                    Spacer(
-                        modifier = Modifier.fillMaxWidth().statusBarsHeight()
-                            .background(
-                                Color.Transparent
-                            )
+            )
+        },
+        fadeIn = true
+    )
+    val posterPainter = rememberCoilPainter(
+        request = "${Constants.URL.POSTER_URL}${movie.poster}",
+        fadeIn = true,
+        requestBuilder = {
+            transformations(
+                RoundedCornersTransformation(8f)
+            )
+        }
+    )
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        Box(
+            modifier = Modifier
+                .aspectRatio(1f)
+                .fillMaxWidth()
+        ) {
+
+            when (backdropPainter.loadState) {
+                ImageLoadState.Empty,
+                is ImageLoadState.Loading -> {
+                    Box(modifier = Modifier.align(Alignment.Center)) {
+                        CircularProgressIndicator(
+                            Modifier.align(Alignment.Center),
+                            color = MaterialTheme.colors.primary
+                        )
+                    }
+                }
+                is ImageLoadState.Success -> {
+                    Image(
+                        painter = backdropPainter,
+                        contentDescription = "",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
                     )
-                    TmdbAppBar(showBack = true, backAction = pop)
-                    Column(
-                        modifier = Modifier.fillMaxWidth().fillMaxHeight(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Transparent)
+            ) {
+                Spacer(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .statusBarsHeight()
+                        .background(
+                            Color.Transparent
+                        )
+                )
+                TmdbAppBar(showBack = true, backAction = pop)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .aspectRatio(0.7f)
+                            .padding(16.dp),
+                        elevation = 16.dp,
+                        border = BorderStroke(1.dp, colors.mainColor),
+                        shape = MaterialTheme.shapes.medium
                     ) {
-                        Card(
-                            modifier = Modifier.fillMaxHeight().aspectRatio(0.7f)
-                                .padding(16.dp),
-                            elevation = 16.dp,
-                            border = BorderStroke(1.dp, colors.mainColor),
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            CoilImage(
-                                data = "${Constants.URL.POSTER_URL}${movie.poster}",
-                                fadeIn = true,
-                                requestBuilder = {
-                                    transformations(
-                                        RoundedCornersTransformation(8f)
-                                    )
-                                }
-                            )
-                        }
+                        Image(
+                            painter = posterPainter,
+                            contentDescription = ""
+                        )
                     }
                 }
             }
-            Column(modifier = Modifier.padding(16.dp)) {
+        }
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = movie.title,
+                modifier = Modifier.padding(vertical = 4.dp),
+                style = MaterialTheme.typography.h5,
+                color = colors.mainColor
+            )
+            Text(
+                text = movie.genres.map { it.name }.toString().removePrefix("[")
+                    .removeSuffix("]"),
+                modifier = Modifier.padding(vertical = 4.dp),
+                style = MaterialTheme.typography.body1,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = colors.mainColor
+            )
+            if (movie.adult)
                 Text(
-                    text = movie.title,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    style = MaterialTheme.typography.h5,
-                    color = colors.mainColor
-                )
-                Text(
-                    text = movie.genres.map { it.name }.toString().removePrefix("[")
-                        .removeSuffix("]"),
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    style = MaterialTheme.typography.body1,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = colors.mainColor
-                )
-                if (movie.adult)
-                    Text(
-                        text = "Adult",
-                        modifier = Modifier.padding(vertical = 4.dp),
-                        style = MaterialTheme.typography.body1,
-                        color = colors.firstColor
-                    )
-                Text(
-                    text = "Original Language: ${movie.language}",
+                    text = "Adult",
                     modifier = Modifier.padding(vertical = 4.dp),
                     style = MaterialTheme.typography.body1,
                     color = colors.firstColor
                 )
-                Text(
-                    text = movie.releaseDate,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    style = MaterialTheme.typography.body1,
-                    color = colors.firstColor
-                )
-                Text(
-                    text = "Rating : ${movie.rating}",
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    style = MaterialTheme.typography.body1,
-                    color = colors.firstColor
-                )
-                Text(
-                    text = movie.overview,
-                    textAlign = TextAlign.Justify,
-                    modifier = Modifier.padding(vertical = 4.dp),
-                    style = MaterialTheme.typography.body2,
-                    color = colors.secondColor
-                )
-                Spacer(modifier = Modifier.navigationBarsHeight().fillMaxWidth())
-            }
+            Text(
+                text = "Original Language: ${movie.language}",
+                modifier = Modifier.padding(vertical = 4.dp),
+                style = MaterialTheme.typography.body1,
+                color = colors.firstColor
+            )
+            Text(
+                text = movie.releaseDate,
+                modifier = Modifier.padding(vertical = 4.dp),
+                style = MaterialTheme.typography.body1,
+                color = colors.firstColor
+            )
+            Text(
+                text = "Rating : ${movie.rating}",
+                modifier = Modifier.padding(vertical = 4.dp),
+                style = MaterialTheme.typography.body1,
+                color = colors.firstColor
+            )
+            Text(
+                text = movie.overview,
+                textAlign = TextAlign.Justify,
+                modifier = Modifier.padding(vertical = 4.dp),
+                style = MaterialTheme.typography.body2,
+                color = colors.secondColor
+            )
+            Spacer(
+                modifier = Modifier
+                    .navigationBarsHeight()
+                    .fillMaxWidth()
+            )
         }
     }
 }

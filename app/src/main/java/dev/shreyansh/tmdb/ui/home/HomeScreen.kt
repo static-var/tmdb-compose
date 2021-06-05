@@ -1,23 +1,26 @@
 package dev.shreyansh.tmdb.ui.home
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumnFor
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.AmbientContext
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.transform.RoundedCornersTransformation
-import dev.chrisbanes.accompanist.coil.CoilImage
-import dev.chrisbanes.accompanist.insets.AmbientWindowInsets
-import dev.chrisbanes.accompanist.insets.statusBarsHeight
-import dev.chrisbanes.accompanist.insets.toPaddingValues
+import com.google.accompanist.coil.rememberCoilPainter
+import com.google.accompanist.imageloading.ImageLoadState
+import com.google.accompanist.insets.LocalWindowInsets
+import com.google.accompanist.insets.rememberInsetsPaddingValues
+import com.google.accompanist.insets.statusBarsHeight
 import dev.shreyansh.tmdb.data.model.MediaContentType
 import dev.shreyansh.tmdb.data.model.Movie
 import dev.shreyansh.tmdb.data.model.TvShow
@@ -46,7 +49,7 @@ fun HomeScreen(
                 topBar = {
                     TmdbAppBar(showBack = false)
                 },
-                bodyContent = {
+                content = {
                     HomeScreenContent(viewModel, openMovie, openTvShow)
                 }
 
@@ -58,12 +61,16 @@ fun HomeScreen(
 @Composable
 fun NoNetworkCard(network: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
         backgroundColor = MaterialTheme.colors.primary,
         elevation = 8.dp
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -72,7 +79,7 @@ fun NoNetworkCard(network: () -> Unit) {
             )
             Button(
                 onClick = network,
-                colors = ButtonConstants.defaultButtonColors(backgroundColor = MaterialTheme.colors.onPrimary)
+                colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.onPrimary)
             ) {
                 Text(text = "Retry")
             }
@@ -86,7 +93,7 @@ fun HomeScreenContent(
     openMovie: (Int) -> Unit,
     openTvShow: (Int) -> Unit
 ) {
-    val context = AmbientContext.current
+    val context = LocalContext.current
     var isConnected by remember { mutableStateOf(NetworkUtil.isConnected(context)) }
     val modifier = Modifier.fillMaxSize()
     val coroutineScope = rememberCoroutineScope()
@@ -170,12 +177,17 @@ fun TmdbMovieList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) ->
         is Success -> {
             val data = (movieUIState as Success).data
             Column(modifier = modifier) {
-                LazyColumnFor(
-                    items = data,
-                    contentPadding = AmbientWindowInsets.current.systemBars
-                        .toPaddingValues(top = false)
-                ) { item ->
-                    MovieItem(movie = item, action)
+                LazyColumn(
+                    contentPadding = rememberInsetsPaddingValues(
+                        insets = LocalWindowInsets.current.systemBars,
+                        applyTop = false,
+                        applyBottom = true,
+                    )
+                ) {
+                    items(data) { item ->
+                        MovieItem(movie = item, action)
+                    }
+
                 }
             }
         }
@@ -199,12 +211,16 @@ fun TmdbTvShowList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) -
         is Success -> {
             val data = (showUIState as Success).data
             Column(modifier = modifier) {
-                LazyColumnFor(
-                    items = data,
-                    contentPadding = AmbientWindowInsets.current.systemBars
-                        .toPaddingValues(top = false)
-                ) { item ->
-                    TvShowItem(tvShow = item, action)
+                LazyColumn(
+                    contentPadding = rememberInsetsPaddingValues(
+                        insets = LocalWindowInsets.current.systemBars,
+                        applyTop = false,
+                        applyBottom = true,
+                    )
+                ) {
+                    items(data) { item ->
+                        TvShowItem(tvShow = item, action)
+                    }
                 }
             }
         }
@@ -216,28 +232,47 @@ fun MovieItem(movie: Movie, action: (Int) -> Unit) {
     Card(
         Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable(onClick = { action(movie.movieId) }),
+            .padding(8.dp),
         elevation = 8.dp,
         shape = TmDBTheme.shapes.medium
     ) {
-        Row {
-            CoilImage(
-                data = "${Constants.URL.POSTER_URL}${movie.poster}",
-                modifier = Modifier.size(80.dp, 108.dp).padding(8.dp),
-                fadeIn = true,
-                requestBuilder = {
-                    transformations(RoundedCornersTransformation(16f))
-                },
-                loading = {
+        val posterPainter = rememberCoilPainter(
+            request = "${Constants.URL.POSTER_URL}${movie.poster}",
+            fadeIn = true,
+            fadeInDurationMs = 800,
+        )
+
+        Row(
+            modifier = Modifier.clickable { action(movie.movieId) }
+        ) {
+            when (posterPainter.loadState) {
+                ImageLoadState.Empty -> Spacer(modifier = Modifier.size(80.dp, 120.dp))
+                is ImageLoadState.Loading -> {
                     Box {
                         CircularProgressIndicator(
-                            Modifier.align(Alignment.Center),
+                            Modifier
+                                .size(80.dp, 120.dp)
+                                .align(Alignment.Center)
+                                .padding(8.dp),
                             color = MaterialTheme.colors.primary
                         )
                     }
                 }
-            )
+                is ImageLoadState.Success -> {
+                    Card(
+                        modifier = Modifier
+                            .size(80.dp, 120.dp)
+                            .padding(8.dp),
+                        shape = TmDBTheme.shapes.medium
+                    ) {
+                        Image(
+                            painter = posterPainter,
+                            contentDescription = "",
+                            contentScale = ContentScale.FillBounds
+                        )
+                    }
+                }
+            }
             Column(modifier = Modifier.fillMaxHeight()) {
                 Text(
                     text = movie.title,
@@ -274,28 +309,44 @@ fun TvShowItem(tvShow: TvShow, action: (Int) -> Unit) {
     Card(
         Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable(onClick = { action.invoke(tvShow.tvShowId) }),
+            .padding(8.dp),
         elevation = 8.dp,
         shape = TmDBTheme.shapes.medium
     ) {
-        Row {
-            CoilImage(
-                data = "${Constants.URL.POSTER_URL}${tvShow.poster}",
-                modifier = Modifier.size(80.dp, 108.dp).padding(8.dp),
-                fadeIn = true,
-                requestBuilder = {
-                    transformations(RoundedCornersTransformation(16f))
-                },
-                loading = {
-                    Box {
-                        CircularProgressIndicator(
-                            Modifier.align(Alignment.Center),
-                            color = MaterialTheme.colors.primary
+        val posterPainter = rememberCoilPainter(
+            request = "${Constants.URL.POSTER_URL}${tvShow.poster}",
+            fadeIn = true,
+            fadeInDurationMs = 800,
+        )
+        Row(modifier = Modifier.clickable {
+            action(tvShow.tvShowId)
+        }) {
+            when (posterPainter.loadState) {
+                ImageLoadState.Empty -> Spacer(modifier = Modifier.size(80.dp, 120.dp))
+                is ImageLoadState.Loading -> Box {
+                    CircularProgressIndicator(
+                        Modifier
+                            .align(Alignment.Center)
+                            .size(80.dp, 120.dp)
+                            .padding(8.dp),
+                        color = MaterialTheme.colors.primary
+                    )
+                }
+                is ImageLoadState.Success -> {
+                    Card(
+                        modifier = Modifier
+                            .size(80.dp, 120.dp)
+                            .padding(8.dp),
+                        shape = TmDBTheme.shapes.medium
+                    ) {
+                        Image(
+                            painter = posterPainter,
+                            contentDescription = "",
+                            contentScale = ContentScale.FillBounds
                         )
                     }
                 }
-            )
+            }
             Column(modifier = Modifier.fillMaxHeight()) {
                 Text(
                     text = tvShow.name,

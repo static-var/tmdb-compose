@@ -1,10 +1,10 @@
 package dev.shreyansh.tmdb.ui
 
-import androidx.hilt.lifecycle.ViewModelInject
 import androidx.lifecycle.*
 import com.dropbox.android.external.store4.StoreRequest
 import com.dropbox.android.external.store4.StoreResponse
 import com.dropbox.android.external.store4.fresh
+import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.shreyansh.tmdb.data.model.MediaContentType
 import dev.shreyansh.tmdb.data.model.Movie
 import dev.shreyansh.tmdb.data.model.TvShow
@@ -14,8 +14,10 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class TmdbViewModel @ViewModelInject constructor(
+@HiltViewModel
+class TmdbViewModel @Inject constructor(
     private val repository: TmdbRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
