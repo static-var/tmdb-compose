@@ -1,6 +1,5 @@
 package dev.shreyansh.tmdb.ui.movie
 
-import android.content.Context
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -10,29 +9,31 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.transform.BlurTransformation
-import coil.transform.RoundedCornersTransformation
-import com.google.accompanist.coil.rememberCoilPainter
-import com.google.accompanist.imageloading.ImageLoadState
+import com.github.ajalt.timberkt.e
 import com.google.accompanist.insets.navigationBarsHeight
 import com.google.accompanist.insets.statusBarsHeight
+import com.google.accompanist.insets.statusBarsPadding
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dev.shreyansh.tmdb.data.model.Movie
 import dev.shreyansh.tmdb.ui.*
 import dev.shreyansh.tmdb.ui.home.ErrorUi
 import dev.shreyansh.tmdb.ui.home.LoadingUi
 import dev.shreyansh.tmdb.utils.Constants
 import dev.shreyansh.tmdb.utils.DominantColors
+import dev.shreyansh.tmdb.utils.NetworkImage
 import dev.shreyansh.tmdb.utils.getColorsFromImageOrTheme
 
 @Composable
 fun MovieScreen(viewModel: TmdbViewModel, movieId: Int, navigateBack: () -> Unit) {
     val movie by viewModel.getMovieById(movieId).observeAsState(initial = Loading())
     val modifier = Modifier.fillMaxSize()
+    val systemUiController = rememberSystemUiController()
+
     Surface(modifier = modifier) {
         when (movie) {
             is Loading -> LoadingUi(modifier = modifier)
@@ -47,6 +48,10 @@ fun MovieScreen(viewModel: TmdbViewModel, movieId: Int, navigateBack: () -> Unit
                     backdropUrl = "${Constants.URL.BACKDROP_URL}${movieData.backdrop}",
                     posterUrl = "${Constants.URL.POSTER_URL}${movieData.poster}"
                 )
+                systemUiController.setSystemBarsColor(
+                    Color.Transparent,
+                    dominantColor.validLuminance > 0.4
+                )
                 MovieUi(
                     movie = movieData,
                     pop = navigateBack,
@@ -60,32 +65,10 @@ fun MovieScreen(viewModel: TmdbViewModel, movieId: Int, navigateBack: () -> Unit
 
 @Composable
 fun MovieUi(
-    context: Context = LocalContext.current,
     movie: Movie,
     pop: () -> Unit,
     colors: DominantColors
 ) {
-    val backdropPainter = rememberCoilPainter(
-        request = "${Constants.URL.BACKDROP_URL}${movie.backdrop}",
-        requestBuilder = {
-            transformations(
-                listOf(
-                    RoundedCornersTransformation(0f),
-                    BlurTransformation(context, 8f, 2f)
-                )
-            )
-        },
-        fadeIn = true
-    )
-    val posterPainter = rememberCoilPainter(
-        request = "${Constants.URL.POSTER_URL}${movie.poster}",
-        fadeIn = true,
-        requestBuilder = {
-            transformations(
-                RoundedCornersTransformation(8f)
-            )
-        }
-    )
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -97,25 +80,26 @@ fun MovieUi(
                 .fillMaxWidth()
         ) {
 
-            when (backdropPainter.loadState) {
-                ImageLoadState.Empty,
-                is ImageLoadState.Loading -> {
+            NetworkImage(
+                url = "${Constants.URL.BACKDROP_URL}${movie.backdrop}",
+                blur = true,
+                loadingContent = {
                     Box(modifier = Modifier.align(Alignment.Center)) {
                         CircularProgressIndicator(
                             Modifier.align(Alignment.Center),
                             color = MaterialTheme.colors.primary
                         )
                     }
-                }
-                is ImageLoadState.Success -> {
+                },
+                successContent = { painter ->
                     Image(
-                        painter = backdropPainter,
+                        painter = painter,
                         contentDescription = "",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
                 }
-            }
+            )
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -129,7 +113,7 @@ fun MovieUi(
                             Color.Transparent
                         )
                 )
-                TmdbAppBar(showBack = true, backAction = pop)
+                TmdbAppBar(showBack = true, backAction = pop, darkIcon = colors.validLuminance > 0.4)
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -140,16 +124,20 @@ fun MovieUi(
                     Card(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .aspectRatio(0.7f)
+                            .aspectRatio(0.66f)
                             .padding(16.dp),
                         elevation = 16.dp,
                         border = BorderStroke(1.dp, colors.mainColor),
                         shape = MaterialTheme.shapes.medium
                     ) {
-                        Image(
-                            painter = posterPainter,
-                            contentDescription = ""
-                        )
+                        NetworkImage(url = "${Constants.URL.POSTER_URL}${movie.poster}") { painter ->
+                            Image(
+                                painter = painter,
+                                contentDescription = "",
+                                contentScale = ContentScale.FillBounds
+                            )
+                        }
+
                     }
                 }
             }

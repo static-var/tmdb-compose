@@ -1,6 +1,5 @@
 package dev.shreyansh.tmdb.ui.tvShows
 
-import android.content.Context
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -10,29 +9,30 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil.transform.BlurTransformation
-import coil.transform.RoundedCornersTransformation
-import com.google.accompanist.coil.rememberCoilPainter
-import com.google.accompanist.imageloading.ImageLoadState
+import com.github.ajalt.timberkt.e
 import com.google.accompanist.insets.navigationBarsHeight
 import com.google.accompanist.insets.statusBarsHeight
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dev.shreyansh.tmdb.data.model.TvShow
 import dev.shreyansh.tmdb.ui.*
 import dev.shreyansh.tmdb.ui.home.ErrorUi
 import dev.shreyansh.tmdb.ui.home.LoadingUi
 import dev.shreyansh.tmdb.utils.Constants
 import dev.shreyansh.tmdb.utils.DominantColors
+import dev.shreyansh.tmdb.utils.NetworkImage
 import dev.shreyansh.tmdb.utils.getColorsFromImageOrTheme
 
 @Composable
 fun TvShowScreen(viewModel: TmdbViewModel, tvShowId: Int, navigateBack: () -> Unit) {
     val tvShow by viewModel.getTvShowById(tvShowId).observeAsState(initial = Loading())
     val modifier = Modifier.fillMaxSize()
+    val systemUiController = rememberSystemUiController()
+
     Surface(modifier = modifier) {
         when (tvShow) {
             is Loading -> LoadingUi(modifier = modifier)
@@ -47,6 +47,11 @@ fun TvShowScreen(viewModel: TmdbViewModel, tvShowId: Int, navigateBack: () -> Un
                     backdropUrl = "${Constants.URL.BACKDROP_URL}${tvShowData.backdrop}",
                     posterUrl = "${Constants.URL.POSTER_URL}${tvShowData.poster}"
                 )
+
+                systemUiController.setSystemBarsColor(
+                    Color.Transparent,
+                    dominantColor.validLuminance > 0.4
+                )
                 TvShowUi(
                     tvShow = tvShowData,
                     pop = navigateBack,
@@ -60,32 +65,10 @@ fun TvShowScreen(viewModel: TmdbViewModel, tvShowId: Int, navigateBack: () -> Un
 
 @Composable
 fun TvShowUi(
-    context: Context = LocalContext.current,
     tvShow: TvShow,
     pop: () -> Unit,
     colors: DominantColors
 ) {
-    val backdropPainter = rememberCoilPainter(
-        request = "${Constants.URL.BACKDROP_URL}${tvShow.backdrop}",
-        fadeIn = true,
-        requestBuilder = {
-            transformations(
-                listOf(
-                    RoundedCornersTransformation(0f),
-                    BlurTransformation(context, 8f, 2f)
-                )
-            )
-        }
-    )
-    val posterPainter = rememberCoilPainter(
-        request = "${Constants.URL.POSTER_URL}${tvShow.poster}",
-        fadeIn = true,
-        requestBuilder = {
-            transformations(
-                RoundedCornersTransformation(8f)
-            )
-        }
-    )
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -96,23 +79,26 @@ fun TvShowUi(
                 .aspectRatio(1f)
                 .fillMaxWidth()
         ) {
-            when (backdropPainter.loadState) {
-                is ImageLoadState.Success -> Image(
-                    painter = backdropPainter,
-                    modifier = Modifier.fillMaxSize(),
-                    contentDescription = "",
-                    contentScale = ContentScale.Crop
-                )
-                ImageLoadState.Empty,
-                is ImageLoadState.Loading -> {
+            NetworkImage(
+                url = "${Constants.URL.POSTER_URL}${tvShow.backdrop}",
+                blur = true,
+                loadingContent = {
                     Box(modifier = Modifier.align(Alignment.Center)) {
                         CircularProgressIndicator(
                             Modifier.align(Alignment.Center),
                             color = MaterialTheme.colors.primary
                         )
                     }
+                },
+                successContent = { painter ->
+                    Image(
+                        painter = painter,
+                        modifier = Modifier.fillMaxSize(),
+                        contentDescription = "",
+                        contentScale = ContentScale.Crop
+                    )
                 }
-            }
+            )
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -126,7 +112,7 @@ fun TvShowUi(
                             Color.Transparent
                         )
                 )
-                TmdbAppBar(showBack = true, backAction = pop)
+                TmdbAppBar(showBack = true, backAction = pop, darkIcon = colors.validLuminance > 0.4)
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -137,16 +123,20 @@ fun TvShowUi(
                     Card(
                         modifier = Modifier
                             .fillMaxHeight()
-                            .aspectRatio(0.7f)
+                            .aspectRatio(0.66f)
                             .padding(16.dp),
                         elevation = 16.dp,
                         border = BorderStroke(1.dp, colors.mainColor),
                         shape = MaterialTheme.shapes.medium
                     ) {
-                        Image(
-                            painter = posterPainter,
-                            contentDescription = ""
-                        )
+                        NetworkImage(url = "${Constants.URL.POSTER_URL}${tvShow.poster}") { painter ->
+                            Image(
+                                painter = painter,
+                                contentDescription = "",
+                                contentScale = ContentScale.FillBounds
+                            )
+                        }
+
                     }
                 }
             }

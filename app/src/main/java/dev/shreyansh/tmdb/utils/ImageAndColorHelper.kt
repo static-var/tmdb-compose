@@ -15,6 +15,7 @@ import coil.request.ImageRequest
 import coil.request.SuccessResult
 import coil.size.Scale
 import com.github.ajalt.timberkt.e
+import com.github.ajalt.timberkt.i
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.max
@@ -41,14 +42,13 @@ fun getColorsFromImageOrTheme(
                 listOf(
                     themeColors.primaryVariant,
                     themeColors.secondary
-                ).random()
+                ).random(),
+                0.0f
             )
         )
     }
     LaunchedEffect(key1 = Unit) {
         calculateSwatchesInImage(context = context, backdropUrl, themeColors.background)?.let {
-            dominantColor = it
-        } ?: calculateSwatchesInImage(context = context, posterUrl, themeColors.background)?.let {
             dominantColor = it
         }
     }
@@ -90,25 +90,25 @@ suspend fun calculateSwatchesInImage(
             var c2: Color? = null
             var c3: Color? = null
             palette.vibrantSwatch?.let { swatch ->
-                if (Color(swatch.rgb).constrastAgainst(surfaceColor) >= ContrastValue) {
-                    e { "C1 from vibrant" }
+                if (Color(swatch.rgb).contrastAgainst(surfaceColor) >= ContrastValue) {
+                    i { "C1 from vibrant" }
                     c1 = Color(swatch.rgb)
                 }
-                if (Color(swatch.titleTextColor).constrastAgainst(surfaceColor) >= ContrastValue) {
-                    e { "C2 from vibrant" }
+                if (Color(swatch.titleTextColor).contrastAgainst(surfaceColor) >= ContrastValue) {
+                    i { "C2 from vibrant" }
                     c2 = Color(swatch.titleTextColor)
                 }
-                if (Color(swatch.bodyTextColor).constrastAgainst(surfaceColor) >= ContrastValue) {
-                    e { "C3 from vibrant" }
+                if (Color(swatch.bodyTextColor).contrastAgainst(surfaceColor) >= ContrastValue) {
+                    i { "C3 from vibrant" }
                     c3 = Color(swatch.bodyTextColor)
                 }
             } ?: palette.swatches
                 .sortedByDescending { swatch -> swatch.population }
                 // Then we want to find the first valid color
                 .firstOrNull { swatch ->
-                    Color(swatch.rgb).constrastAgainst(surfaceColor) >= ContrastValue &&
-                            Color(swatch.titleTextColor).constrastAgainst(surfaceColor) >= ContrastValue &&
-                            Color(swatch.bodyTextColor).constrastAgainst(surfaceColor) >= ContrastValue
+                    Color(swatch.rgb).contrastAgainst(surfaceColor) >= ContrastValue &&
+                            Color(swatch.titleTextColor).contrastAgainst(surfaceColor) >= ContrastValue &&
+                            Color(swatch.bodyTextColor).contrastAgainst(surfaceColor) >= ContrastValue
                 }
                 ?.let { swatch ->
                     e { "All colors from other swatches" }
@@ -116,9 +116,14 @@ suspend fun calculateSwatchesInImage(
                     c2 = Color(swatch.titleTextColor)
                     c3 = Color(swatch.bodyTextColor)
                 }
-            if (c1 != null && c2 != null)
-                dominantColor = DominantColors(c1!!, c2!!, c3!!)
-            else
+            if (c1 != null && c2 != null) {
+                val validLuminance = when {
+                    c1!!.luminance() != 0.0f -> c1!!.luminance()
+                    c2!!.luminance() != 0.0f -> c2!!.luminance()
+                    else -> c3!!.luminance()
+                }
+                dominantColor = DominantColors(c1!!, c2!!, c3!!, validLuminance)
+            } else
                 e { "Using theme colors" }
 
             dominantColor
@@ -126,7 +131,7 @@ suspend fun calculateSwatchesInImage(
     }
 }
 
-fun Color.constrastAgainst(background: Color): Float {
+fun Color.contrastAgainst(background: Color): Float {
     val fg = if (alpha < 1f) compositeOver(background) else this
 
     val fgLuminance = fg.luminance() + 0.05f

@@ -15,9 +15,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.dp
 import dev.shreyansh.tmdb.R
+import dev.shreyansh.tmdb.ui.theme.TmDBTheme
 
 @Composable
-fun TmdbAppBar(showBack: Boolean, backAction: () -> Unit = {}) {
+fun TmdbAppBar(showBack: Boolean, backAction: () -> Unit = {}, darkIcon: Boolean = TmDBTheme.colors.isLight) {
     Row(modifier = Modifier.height(56.dp).fillMaxWidth()) {
         Surface(color = Color.Transparent) {
             if (showBack) {
@@ -25,7 +26,8 @@ fun TmdbAppBar(showBack: Boolean, backAction: () -> Unit = {}) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_baseline_arrow_back),
                         modifier = Modifier.padding(4.dp),
-                        contentDescription = ""
+                        contentDescription = "",
+                        tint = if (darkIcon) Color.Black else Color.White
                     )
                 }
             } else {
