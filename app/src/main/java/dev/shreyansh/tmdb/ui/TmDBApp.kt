@@ -13,7 +13,7 @@ import dev.shreyansh.tmdb.ui.about.AboutScreen
 import dev.shreyansh.tmdb.ui.home.HomeScreen
 import dev.shreyansh.tmdb.ui.movie.MovieScreen
 import dev.shreyansh.tmdb.ui.navigation.Actions
-import dev.shreyansh.tmdb.ui.navigation.Destinations
+import dev.shreyansh.tmdb.ui.navigation.Destination
 import dev.shreyansh.tmdb.ui.theme.TmDBTheme
 import dev.shreyansh.tmdb.ui.tvShows.TvShowScreen
 
@@ -25,8 +25,8 @@ fun TmDBApp() {
     TmDBTheme {
         ProvideWindowInsets {
             // A surface container using the 'background' color from the theme
-            NavHost(navController = navController, startDestination = Destinations.Home) {
-                composable(Destinations.Home) {
+            NavHost(navController = navController, startDestination = Destination.Home.route) {
+                composable(Destination.Home.route) {
                     HomeScreen(
                         viewModel,
                         action.openAbout,
@@ -34,35 +34,27 @@ fun TmDBApp() {
                         action.openTvShow,
                     )
                 }
-                composable(Destinations.About) {
+                composable(Destination.About.route) {
                     AboutScreen(
                         action.pop
                     )
                 }
                 composable(
-                    "${Destinations.Actors}/${Destinations.NavArgs.ActorId}",
-                    arguments = listOf(navArgument(Destinations.NavArgs.ActorId) {
-                        type = NavType.StringType
-                    })
-                ) {
-
-                }
-                composable(
-                    "${Destinations.Movie}/{${Destinations.NavArgs.MovieId}}",
-                    arguments = listOf(navArgument(Destinations.NavArgs.MovieId) {
+                    Destination.Movie.route,
+                    arguments = listOf(navArgument(Destination.Movie.Args.MovieId) {
                         type = NavType.IntType
                     })
                 ) {
-                    val id = it.arguments?.getInt(Destinations.NavArgs.MovieId) ?: -1
+                    val id = it.arguments?.getInt(Destination.Movie.Args.MovieId) ?: -1
                     MovieScreen(viewModel = viewModel, movieId = id, navigateBack = action.pop)
                 }
                 composable(
-                    "${Destinations.TvShow}/{${Destinations.NavArgs.TvShowId}}",
-                    arguments = listOf(navArgument(Destinations.NavArgs.TvShowId) {
+                    Destination.TvShow.route,
+                    arguments = listOf(navArgument(Destination.TvShow.Args.TvShowId) {
                         type = NavType.IntType
                     })
                 ) {
-                    val id = it.arguments?.getInt(Destinations.NavArgs.TvShowId) ?: -1
+                    val id = it.arguments?.getInt(Destination.TvShow.Args.TvShowId) ?: -1
                     TvShowScreen(viewModel = viewModel, tvShowId = id, navigateBack = action.pop)
                 }
             }

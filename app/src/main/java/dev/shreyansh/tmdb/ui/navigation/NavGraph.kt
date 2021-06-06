@@ -1,37 +1,44 @@
 package dev.shreyansh.tmdb.ui.navigation
 
 import androidx.navigation.NavController
-import dev.shreyansh.tmdb.ui.navigation.Destinations.About
-import dev.shreyansh.tmdb.ui.navigation.Destinations.Actors
-import dev.shreyansh.tmdb.ui.navigation.Destinations.Movie
-import dev.shreyansh.tmdb.ui.navigation.Destinations.TvShow
 
-object Destinations {
-    const val Home = "home"
-    const val Movie = "movie"
-    const val TvShow = "tvShow"
-    const val Actors = "actors"
-    const val About = "about"
 
-    object NavArgs {
-        const val MovieId = "movieID"
-        const val TvShowId = "tvShowID"
-        const val ActorId = "actorID"
+sealed class Destination(val route: String) {
+    object Home : Destination(DestinationConstants.HOME)
+
+    object About : Destination(DestinationConstants.ABOUT)
+
+    object Movie : Destination("${DestinationConstants.MOVIE}/{${Args.MovieId}}") {
+        object Args {
+            const val MovieId = "movieID"
+        }
+    }
+
+    object TvShow : Destination("${DestinationConstants.TV_SHOW}/{${Args.TvShowId}}") {
+        object Args {
+            const val TvShowId = "tvShowID"
+        }
     }
 }
 
+
+private object DestinationConstants {
+    const val HOME = "home"
+    const val MOVIE = "movie"
+    const val TV_SHOW = "tvShow"
+    const val ABOUT = "about"
+}
+
+
 class Actions(navController: NavController) {
     val openMovie: (Int) -> Unit = { movieId ->
-        navController.navigate("$Movie/$movieId")
+        navController.navigate("${DestinationConstants.MOVIE}/$movieId")
     }
     val openTvShow: (Int) -> Unit = { tvShowId ->
-        navController.navigate("$TvShow/$tvShowId")
-    }
-    val openActor: (Int) -> Unit = { actorId ->
-        navController.navigate("$Actors/$actorId")
+        navController.navigate("${DestinationConstants.TV_SHOW}/$tvShowId")
     }
     val openAbout: () -> Unit = {
-        navController.navigate(About)
+        navController.navigate(DestinationConstants.ABOUT)
     }
     val pop: () -> Unit = {
         navController.popBackStack()
