@@ -41,7 +41,8 @@ android {
         jvmTarget = '1.8'
         freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn",
                              "-Xuse-experimental=kotlinx.coroutines.ExperimentalCoroutinesApi",
-                             "-Xuse-experimental=kotlinx.coroutines.FlowPreview"]
+                             "-Xuse-experimental=kotlinx.coroutines.FlowPreview",
+                             "-Xuse-experimental=kotlin.time.ExperimentalTime"]
         useIR = true
     }
     buildFeatures {
@@ -81,10 +82,12 @@ dependencies {
 
 
     // Misc libs
-    def accompanist = "0.11.1"
+    def accompanist = "0.12.0"
     implementation "com.google.accompanist:accompanist-insets:$accompanist"
     implementation "com.google.accompanist:accompanist-coil:$accompanist"
     implementation "com.google.accompanist:accompanist-systemuicontroller:$accompanist"
+    implementation "com.google.accompanist:accompanist-placeholder-material:$accompanist"
+    implementation "com.google.accompanist:accompanist-swiperefresh:$accompanist"
     implementation 'com.github.ajalt:timberkt:1.5.1'
     implementation "org.jetbrains.kotlin:kotlin-reflect:1.5.10"
     implementation "com.dropbox.mobile.store:store4:4.0.2-KT15"
@@ -110,7 +113,7 @@ dependencies {
     implementation 'androidx.hilt:hilt-lifecycle-viewmodel:1.0.0-alpha03'
     implementation "androidx.hilt:hilt-common:1.0.0"
     kapt 'androidx.hilt:hilt-compiler:1.0.0'
-    implementation 'androidx.hilt:hilt-navigation-compose:1.0.0-alpha02'
+    implementation 'androidx.hilt:hilt-navigation-compose:1.0.0-alpha03'
 
     // Room
     def room_version = "2.4.0-alpha02"
