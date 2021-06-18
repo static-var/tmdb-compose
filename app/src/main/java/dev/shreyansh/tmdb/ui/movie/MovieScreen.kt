@@ -83,15 +83,7 @@ fun MovieUi(
             NetworkImage(
                 url = "${Constants.URL.BACKDROP_URL}${movie.backdrop}",
                 blur = true,
-                loadingContent = {
-                    Box(modifier = Modifier.align(Alignment.Center)) {
-                        CircularProgressIndicator(
-                            Modifier.align(Alignment.Center),
-                            color = MaterialTheme.colors.primary
-                        )
-                    }
-                },
-                successContent = { painter ->
+                successContent = { painter, loadState ->
                     Image(
                         painter = painter,
                         contentDescription = "",
@@ -130,7 +122,7 @@ fun MovieUi(
                         border = BorderStroke(1.dp, colors.mainColor),
                         shape = MaterialTheme.shapes.medium
                     ) {
-                        NetworkImage(url = "${Constants.URL.POSTER_URL}${movie.poster}") { painter ->
+                        NetworkImage(url = "${Constants.URL.POSTER_URL}${movie.poster}") { painter, imageLoadState ->
                             Image(
                                 painter = painter,
                                 contentDescription = "",

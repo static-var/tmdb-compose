@@ -1,9 +1,6 @@
 package dev.shreyansh.tmdb.data.repository
 
-import com.dropbox.android.external.store4.Fetcher
-import com.dropbox.android.external.store4.SourceOfTruth
-import com.dropbox.android.external.store4.StoreBuilder
-import com.dropbox.android.external.store4.fresh
+import com.dropbox.android.external.store4.*
 import dev.shreyansh.tmdb.data.api.TmdbService
 import dev.shreyansh.tmdb.data.db.dao.GenreDao
 import dev.shreyansh.tmdb.data.db.dao.MovieDao
@@ -12,9 +9,11 @@ import dev.shreyansh.tmdb.data.model.Genre
 import dev.shreyansh.tmdb.data.model.Movie
 import dev.shreyansh.tmdb.data.model.TvShow
 import dev.shreyansh.tmdb.di.IoDispatcher
+import dev.shreyansh.tmdb.utils.Constants
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.flowOn
 import javax.inject.Inject
+import kotlin.time.Duration
 
 class TmdbRepository @Inject constructor(
     private val genreDao: GenreDao,
@@ -26,32 +25,43 @@ class TmdbRepository @Inject constructor(
     private lateinit var genreList: List<Genre>
 
     fun tvShowStore() = StoreBuilder.from(
-        fetcher = Fetcher.of { _ ->
+        fetcher = Fetcher.of<String, List<TvShow>> { _ ->
             val show = service.getTrendingShows().results
             if (::genreList.isInitialized.not())
-                genreList = genreStore().fresh("")
+                genreList = genreStore().get("")
             mapGenreToTvShows(show, genreList)
         },
         sourceOfTruth = SourceOfTruth.of(
             reader = { tvShowDao.getAll() },
             writer = { _, list -> tvShowDao.insertAll(list) }
         )
+    ).cachePolicy(
+        MemoryPolicy
+            .MemoryPolicyBuilder<String, List<TvShow>>()
+            .setExpireAfterAccess(Duration.minutes(5))
+            .build()
     ).build()
 
-    fun movieStore() = StoreBuilder.from(
-        fetcher = Fetcher.of { _ ->
-            val movies = service.getTrendingMovies().results
-            if (::genreList.isInitialized.not())
-                genreList = genreStore().fresh("")
-            mapGenreToMovie(movies, genreList)
-        },
-        sourceOfTruth = SourceOfTruth.of(
-            reader = { movieDao.getAll() },
-            writer = { _, list ->
-                movieDao.insertAll(list)
-            }
-        )
-    ).build()
+    fun movieStore() =
+        StoreBuilder.from(
+            fetcher = Fetcher.of<String, List<Movie>> { _ ->
+                val movies = service.getTrendingMovies().results
+                if (::genreList.isInitialized.not())
+                    genreList = genreStore().get("")
+                mapGenreToMovie(movies, genreList)
+            },
+            sourceOfTruth = SourceOfTruth.of(
+                reader = { movieDao.getAll() },
+                writer = { _, list ->
+                    movieDao.insertAll(list)
+                }
+            )
+        ).cachePolicy(
+            MemoryPolicy
+                .MemoryPolicyBuilder<String, List<Movie>>()
+                .setExpireAfterAccess(Duration.minutes(5))
+                .build()
+        ).build()
 
     fun genreStore() = StoreBuilder.from(
         fetcher = Fetcher.of { _ ->

@@ -2,15 +2,10 @@ package dev.shreyansh.tmdb.utils
 
 import android.content.Context
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.graphics.ColorUtils
 import coil.transform.BlurTransformation
 import coil.transform.RoundedCornersTransformation
-import com.github.ajalt.timberkt.e
 import com.google.accompanist.coil.rememberCoilPainter
 import com.google.accompanist.imageloading.ImageLoadState
 
@@ -20,7 +15,7 @@ fun NetworkImage(
     url: String,
     blur: Boolean = false,
     loadingContent: @Composable() () -> Unit = {},
-    successContent: @Composable() (Painter) -> Unit
+    successContent: @Composable() (Painter, ImageLoadState) -> Unit
 ) {
     val painter = rememberCoilPainter(
         request = url,
@@ -44,7 +39,7 @@ fun NetworkImage(
             loadingContent()
         }
         is ImageLoadState.Success -> {
-            successContent(painter)
+            successContent(painter, painter.loadState)
         }
     }
 }

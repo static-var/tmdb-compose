@@ -3,6 +3,7 @@ package dev.shreyansh.tmdb.ui.home
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,9 +18,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil.transform.RoundedCornersTransformation
+import com.google.accompanist.coil.rememberCoilPainter
+import com.google.accompanist.imageloading.ImageLoadState
 import com.google.accompanist.insets.LocalWindowInsets
 import com.google.accompanist.insets.rememberInsetsPaddingValues
 import com.google.accompanist.insets.statusBarsHeight
+import com.google.accompanist.placeholder.PlaceholderHighlight
+import com.google.accompanist.placeholder.material.placeholder
+import com.google.accompanist.placeholder.material.shimmer
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.SwipeRefreshIndicator
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dev.shreyansh.tmdb.data.model.MediaContentType
 import dev.shreyansh.tmdb.data.model.Movie
@@ -27,7 +37,6 @@ import dev.shreyansh.tmdb.data.model.TvShow
 import dev.shreyansh.tmdb.ui.*
 import dev.shreyansh.tmdb.ui.theme.TmDBTheme
 import dev.shreyansh.tmdb.utils.Constants
-import dev.shreyansh.tmdb.utils.NetworkImage
 import dev.shreyansh.tmdb.utils.NetworkUtil
 import kotlinx.coroutines.launch
 
@@ -171,16 +180,33 @@ fun TmdbMovieList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) ->
         .observeAsState(initial = Loading())
 
     when (movieUIState) {
-        is Loading -> {
-            LoadingUi(modifier = modifier)
-        }
         is Error -> {
             val error = (movieUIState as Error).errorMessage
             ErrorUi(modifier = modifier, errorMessage = error)
         }
+        is Loading,
         is Success -> {
-            val data = (movieUIState as Success).data
-            Column(modifier = modifier) {
+            val data = if (movieUIState is Success)
+                (movieUIState as Success).data
+            else generateSequence { Movie() }.take(10).toList()
+            val loadingData = movieUIState is Loading
+            SwipeRefresh(
+                state = rememberSwipeRefreshState(isRefreshing = loadingData),
+                onRefresh = { viewModel.refreshMovies() },
+                modifier = modifier,
+                indicator = { state, trigger ->
+                    SwipeRefreshIndicator(
+                        // Pass the SwipeRefreshState + trigger through
+                        state = state,
+                        refreshTriggerDistance = trigger,
+                        // Enable the scale animation
+                        scale = true,
+                        // Change the color and shape
+                        backgroundColor = TmDBTheme.colors.primary,
+                        shape = TmDBTheme.shapes.small,
+                    )
+                }
+            ) {
                 LazyColumn(
                     contentPadding = rememberInsetsPaddingValues(
                         insets = LocalWindowInsets.current.navigationBars,
@@ -188,9 +214,8 @@ fun TmdbMovieList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) ->
                     )
                 ) {
                     items(data) { item ->
-                        MovieItem(movie = item, action)
+                        MovieItem(movie = item, action, loadingData)
                     }
-
                 }
             }
         }
@@ -204,16 +229,33 @@ fun TmdbTvShowList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) -
         .observeAsState(initial = Loading())
 
     when (showUIState) {
-        is Loading -> {
-            LoadingUi(modifier = modifier)
-        }
         is Error -> {
             val error = (showUIState as Error).errorMessage
             ErrorUi(modifier = modifier, errorMessage = error)
         }
+        is Loading,
         is Success -> {
-            val data = (showUIState as Success).data
-            Column(modifier = modifier) {
+            val data = if (showUIState is Success)
+                (showUIState as Success).data
+            else generateSequence { TvShow() }.take(10).toList()
+            val loadingData = showUIState is Loading
+            SwipeRefresh(
+                state = rememberSwipeRefreshState(isRefreshing = loadingData),
+                onRefresh = { viewModel.refreshTvShows() },
+                modifier = modifier,
+                indicator = { state, trigger ->
+                    SwipeRefreshIndicator(
+                        // Pass the SwipeRefreshState + trigger through
+                        state = state,
+                        refreshTriggerDistance = trigger,
+                        // Enable the scale animation
+                        scale = true,
+                        // Change the color and shape
+                        backgroundColor = TmDBTheme.colors.primary,
+                        shape = TmDBTheme.shapes.small,
+                    )
+                }
+            ) {
                 LazyColumn(
                     contentPadding = rememberInsetsPaddingValues(
                         insets = LocalWindowInsets.current.navigationBars,
@@ -221,7 +263,7 @@ fun TmdbTvShowList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) -
                     )
                 ) {
                     items(data) { item ->
-                        TvShowItem(tvShow = item, action)
+                        TvShowItem(tvShow = item, action, loadingData)
                     }
                 }
             }
@@ -230,7 +272,20 @@ fun TmdbTvShowList(modifier: Modifier, viewModel: TmdbViewModel, action: (Int) -
 }
 
 @Composable
-fun MovieItem(movie: Movie, action: (Int) -> Unit) {
+fun MovieItem(movie: Movie, action: (Int) -> Unit, loadingData: Boolean) {
+
+    val painter = rememberCoilPainter(
+        request = "${Constants.URL.POSTER_URL}${movie.poster}",
+        fadeIn = true,
+        fadeInDurationMs = 800,
+        requestBuilder = {
+            transformations(
+                listOf(
+                    RoundedCornersTransformation(0f),
+                )
+            )
+        },
+    )
     Card(
         Modifier
             .fillMaxWidth()
@@ -241,38 +296,36 @@ fun MovieItem(movie: Movie, action: (Int) -> Unit) {
         Row(
             modifier = Modifier.clickable { action(movie.movieId) }
         ) {
-            NetworkImage(
-                url = "${Constants.URL.POSTER_URL}${movie.poster}",
-                loadingContent = {
-                    Box {
-                        CircularProgressIndicator(
-                            Modifier
-                                .size(80.dp, 120.dp)
-                                .align(Alignment.Center)
-                                .padding(8.dp),
-                            color = MaterialTheme.colors.primary
-                        )
-                    }
-                },
-                successContent = { painter ->
-                    Card(
-                        modifier = Modifier
-                            .size(80.dp, 120.dp)
-                            .padding(8.dp),
-                        shape = TmDBTheme.shapes.medium
-                    ) {
-                        Image(
-                            painter = painter,
-                            contentDescription = "",
-                            contentScale = ContentScale.FillBounds
-                        )
-                    }
-                }
-            )
+            Card(
+                modifier = Modifier
+                    .size(80.dp, 120.dp)
+                    .padding(8.dp)
+                    .placeholder(
+                        visible = painter.loadState is ImageLoadState.Empty || painter.loadState is ImageLoadState.Loading,
+                        highlight = PlaceholderHighlight.shimmer(),
+                        shape = TmDBTheme.shapes.small,
+                        color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                    ),
+                shape = TmDBTheme.shapes.medium
+            ) {
+                Image(
+                    painter = painter,
+                    contentDescription = "",
+                    contentScale = ContentScale.FillBounds
+                )
+            }
+
             Column(modifier = Modifier.fillMaxHeight()) {
                 Text(
                     text = movie.title,
-                    modifier = Modifier.padding(start = 8.dp, top = 4.dp, end = 8.dp),
+                    modifier = Modifier
+                        .padding(top = 8.dp, start = 8.dp, end = 8.dp)
+                        .placeholder(
+                            visible = loadingData,
+                            highlight = PlaceholderHighlight.shimmer(),
+                            shape = TmDBTheme.shapes.small,
+                            color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                        ),
                     style = MaterialTheme.typography.subtitle1,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -280,19 +333,40 @@ fun MovieItem(movie: Movie, action: (Int) -> Unit) {
                 Text(
                     text = movie.genres.map { it.name }.toString().removePrefix("[")
                         .removeSuffix("]"),
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .placeholder(
+                            visible = loadingData,
+                            highlight = PlaceholderHighlight.shimmer(),
+                            shape = TmDBTheme.shapes.small,
+                            color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                        ),
                     style = MaterialTheme.typography.body2,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = "Release Date : ${movie.releaseDate}",
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .placeholder(
+                            visible = loadingData,
+                            highlight = PlaceholderHighlight.shimmer(),
+                            shape = TmDBTheme.shapes.small,
+                            color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                        ),
                     style = MaterialTheme.typography.body2,
                 )
                 Text(
                     text = "Rating : ${movie.rating}",
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .placeholder(
+                            visible = loadingData,
+                            highlight = PlaceholderHighlight.shimmer(),
+                            shape = TmDBTheme.shapes.small,
+                            color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                        ),
                     style = MaterialTheme.typography.body2,
                 )
             }
@@ -301,7 +375,20 @@ fun MovieItem(movie: Movie, action: (Int) -> Unit) {
 }
 
 @Composable
-fun TvShowItem(tvShow: TvShow, action: (Int) -> Unit) {
+fun TvShowItem(tvShow: TvShow, action: (Int) -> Unit, loadingData: Boolean) {
+    val painter = rememberCoilPainter(
+        request = "${Constants.URL.POSTER_URL}${tvShow.poster}",
+        fadeIn = true,
+        fadeInDurationMs = 800,
+        requestBuilder = {
+            transformations(
+                listOf(
+                    RoundedCornersTransformation(0f),
+                )
+            )
+        },
+    )
+
     Card(
         Modifier
             .fillMaxWidth()
@@ -312,36 +399,35 @@ fun TvShowItem(tvShow: TvShow, action: (Int) -> Unit) {
         Row(modifier = Modifier.clickable {
             action(tvShow.tvShowId)
         }) {
-            NetworkImage(
-                url = "${Constants.URL.POSTER_URL}${tvShow.poster}",
-                loadingContent = {
-                    CircularProgressIndicator(
-                        Modifier
-                            .align(Alignment.CenterVertically)
-                            .size(80.dp, 120.dp)
-                            .padding(8.dp),
-                        color = MaterialTheme.colors.primary
-                    )
-                },
-                successContent = { painter ->
-                    Card(
-                        modifier = Modifier
-                            .size(80.dp, 120.dp)
-                            .padding(8.dp),
-                        shape = TmDBTheme.shapes.medium
-                    ) {
-                        Image(
-                            painter = painter,
-                            contentDescription = "",
-                            contentScale = ContentScale.FillBounds
-                        )
-                    }
-                }
-            )
+            Card(
+                modifier = Modifier
+                    .size(80.dp, 120.dp)
+                    .padding(8.dp)
+                    .placeholder(
+                        visible = painter.loadState is ImageLoadState.Empty || painter.loadState is ImageLoadState.Loading,
+                        highlight = PlaceholderHighlight.shimmer(),
+                        shape = TmDBTheme.shapes.small,
+                        color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                    ),
+                shape = TmDBTheme.shapes.medium
+            ) {
+                Image(
+                    painter = painter,
+                    contentDescription = "",
+                    contentScale = ContentScale.FillBounds
+                )
+            }
             Column(modifier = Modifier.fillMaxHeight()) {
                 Text(
                     text = tvShow.name,
-                    modifier = Modifier.padding(start = 8.dp, top = 4.dp, end = 8.dp),
+                    modifier = Modifier
+                        .padding(start = 8.dp, top = 4.dp, end = 8.dp)
+                        .placeholder(
+                            visible = loadingData,
+                            highlight = PlaceholderHighlight.shimmer(),
+                            shape = TmDBTheme.shapes.small,
+                            color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                        ),
                     style = MaterialTheme.typography.subtitle1,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -349,19 +435,40 @@ fun TvShowItem(tvShow: TvShow, action: (Int) -> Unit) {
                 Text(
                     text = tvShow.genres.map { it.name }.toString().removePrefix("[")
                         .removeSuffix("]"),
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .placeholder(
+                            visible = loadingData,
+                            highlight = PlaceholderHighlight.shimmer(),
+                            shape = TmDBTheme.shapes.small,
+                            color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                        ),
                     style = MaterialTheme.typography.body2,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = "First Air date : ${tvShow.firstAirDate}",
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .placeholder(
+                            visible = loadingData,
+                            highlight = PlaceholderHighlight.shimmer(),
+                            shape = TmDBTheme.shapes.small,
+                            color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                        ),
                     style = MaterialTheme.typography.body2,
                 )
                 Text(
                     text = "Rating : ${tvShow.rating}",
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                    modifier = Modifier
+                        .padding(horizontal = 8.dp)
+                        .placeholder(
+                            visible = loadingData,
+                            highlight = PlaceholderHighlight.shimmer(),
+                            shape = TmDBTheme.shapes.small,
+                            color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                        ),
                     style = MaterialTheme.typography.body2,
                 )
             }

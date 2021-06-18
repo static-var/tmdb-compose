@@ -82,15 +82,7 @@ fun TvShowUi(
             NetworkImage(
                 url = "${Constants.URL.POSTER_URL}${tvShow.backdrop}",
                 blur = true,
-                loadingContent = {
-                    Box(modifier = Modifier.align(Alignment.Center)) {
-                        CircularProgressIndicator(
-                            Modifier.align(Alignment.Center),
-                            color = MaterialTheme.colors.primary
-                        )
-                    }
-                },
-                successContent = { painter ->
+                successContent = { painter, imageLoadState ->
                     Image(
                         painter = painter,
                         modifier = Modifier.fillMaxSize(),
@@ -129,7 +121,7 @@ fun TvShowUi(
                         border = BorderStroke(1.dp, colors.mainColor),
                         shape = MaterialTheme.shapes.medium
                     ) {
-                        NetworkImage(url = "${Constants.URL.POSTER_URL}${tvShow.poster}") { painter ->
+                        NetworkImage(url = "${Constants.URL.POSTER_URL}${tvShow.poster}") { painter, imageLoadState ->
                             Image(
                                 painter = painter,
                                 contentDescription = "",
