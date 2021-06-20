@@ -32,14 +32,5 @@ fun NetworkImage(
             else this
         },
     )
-
-    when (painter.loadState) {
-        ImageLoadState.Empty,
-        is ImageLoadState.Loading -> {
-            loadingContent()
-        }
-        is ImageLoadState.Success -> {
-            successContent(painter, painter.loadState)
-        }
-    }
+    successContent(painter, painter.loadState)
 }

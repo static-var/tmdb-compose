@@ -2,27 +2,33 @@ package dev.shreyansh.tmdb.ui.movie
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
+import androidx.compose.material.Card
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.github.ajalt.timberkt.e
+import com.google.accompanist.coil.rememberCoilPainter
+import com.google.accompanist.imageloading.ImageLoadState
 import com.google.accompanist.insets.navigationBarsHeight
 import com.google.accompanist.insets.statusBarsHeight
-import com.google.accompanist.insets.statusBarsPadding
+import com.google.accompanist.placeholder.PlaceholderHighlight
+import com.google.accompanist.placeholder.material.placeholder
+import com.google.accompanist.placeholder.material.shimmer
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dev.shreyansh.tmdb.data.model.Movie
 import dev.shreyansh.tmdb.ui.*
 import dev.shreyansh.tmdb.ui.home.ErrorUi
 import dev.shreyansh.tmdb.ui.home.LoadingUi
+import dev.shreyansh.tmdb.ui.theme.TmDBTheme
 import dev.shreyansh.tmdb.utils.Constants
 import dev.shreyansh.tmdb.utils.DominantColors
 import dev.shreyansh.tmdb.utils.NetworkImage
@@ -69,6 +75,7 @@ fun MovieUi(
     pop: () -> Unit,
     colors: DominantColors
 ) {
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -87,7 +94,12 @@ fun MovieUi(
                     Image(
                         painter = painter,
                         contentDescription = "",
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().placeholder(
+                            visible = loadState is ImageLoadState.Empty || loadState is ImageLoadState.Loading,
+                            highlight = PlaceholderHighlight.shimmer(),
+                            shape = TmDBTheme.shapes.small,
+                            color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                        ),
                         contentScale = ContentScale.Crop
                     )
                 }
@@ -105,7 +117,11 @@ fun MovieUi(
                             Color.Transparent
                         )
                 )
-                TmdbAppBar(showBack = true, backAction = pop, darkIcon = colors.validLuminance > 0.4)
+                TmdbAppBar(
+                    showBack = true,
+                    backAction = pop,
+                    darkIcon = colors.validLuminance > 0.4
+                )
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -126,7 +142,13 @@ fun MovieUi(
                             Image(
                                 painter = painter,
                                 contentDescription = "",
-                                contentScale = ContentScale.FillBounds
+                                contentScale = ContentScale.FillBounds,
+                                modifier = Modifier.placeholder(
+                                    visible = imageLoadState is ImageLoadState.Empty || imageLoadState is ImageLoadState.Loading,
+                                    highlight = PlaceholderHighlight.shimmer(),
+                                    shape = TmDBTheme.shapes.small,
+                                    color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                                )
                             )
                         }
 

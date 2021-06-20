@@ -15,13 +15,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.github.ajalt.timberkt.e
+import com.google.accompanist.imageloading.ImageLoadState
 import com.google.accompanist.insets.navigationBarsHeight
 import com.google.accompanist.insets.statusBarsHeight
+import com.google.accompanist.placeholder.PlaceholderHighlight
+import com.google.accompanist.placeholder.material.placeholder
+import com.google.accompanist.placeholder.material.shimmer
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import dev.shreyansh.tmdb.data.model.TvShow
 import dev.shreyansh.tmdb.ui.*
 import dev.shreyansh.tmdb.ui.home.ErrorUi
 import dev.shreyansh.tmdb.ui.home.LoadingUi
+import dev.shreyansh.tmdb.ui.theme.TmDBTheme
 import dev.shreyansh.tmdb.utils.Constants
 import dev.shreyansh.tmdb.utils.DominantColors
 import dev.shreyansh.tmdb.utils.NetworkImage
@@ -85,7 +90,12 @@ fun TvShowUi(
                 successContent = { painter, imageLoadState ->
                     Image(
                         painter = painter,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().placeholder(
+                            visible = imageLoadState is ImageLoadState.Empty || imageLoadState is ImageLoadState.Loading,
+                            highlight = PlaceholderHighlight.shimmer(),
+                            shape = TmDBTheme.shapes.small,
+                            color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                        ),
                         contentDescription = "",
                         contentScale = ContentScale.Crop
                     )
@@ -125,7 +135,13 @@ fun TvShowUi(
                             Image(
                                 painter = painter,
                                 contentDescription = "",
-                                contentScale = ContentScale.FillBounds
+                                contentScale = ContentScale.FillBounds,
+                                modifier = Modifier.placeholder(
+                                    visible = imageLoadState is ImageLoadState.Empty || imageLoadState is ImageLoadState.Loading,
+                                    highlight = PlaceholderHighlight.shimmer(),
+                                    shape = TmDBTheme.shapes.small,
+                                    color = if (isSystemInDarkTheme()) Color.DarkGray else Color.LightGray
+                                )
                             )
                         }
 
